@@ -1,6 +1,7 @@
 // Copyright 1998-2013 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
+#include "Object.h"
 #include "Tickable.h"
 #include "../RPGCharacter.h"
 #include "../Common/RPGSharedEnums.h"
@@ -55,13 +56,13 @@ public:
 	if true appiling next effect of the same class will refresh existing one, resetting it's duration
 	and appiling new
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=BaseProperties)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BaseProperties)
 	bool Refreshable;
 
 	/**
 	if true appiling effect the same class will add duration to the existing one. 
 	*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=BaseProperties)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=BaseProperties)
 	bool DurationStackable;
 
 	/**
@@ -83,8 +84,6 @@ public:
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=BaseProperties)
 	float TickDuration;
-	UPROPERTY()
-	float TotalTickDuration;
 	/*
 	Type of this effect. Do not forget to set it!
 	*/
@@ -117,17 +116,21 @@ public:
 	UPROPERTY()
 	bool IsEffectActive;
 
+	/*
+	* implementation specific to effect
+	*/
+	virtual void AddEffect();
 	/** 
 	Initialize timers for effect:
 	Timer for calling remove
 	Timer for calling finish event, to allow end clean up.
 	*/
-	void Initialize();
+	virtual void Initialize();
 
 	/** 
 		Deinitialaize effect, effecticly setting it all ticking properties to 0 or false
 	*/
-	void Deinitialize();
+	virtual void Deinitialize();
 
 	//UPROPERTY(BlueprintAssignable)
 	//FEffectAppiledToTarget OnEffectAppiledtoTarget;
@@ -166,8 +169,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category=PowerEffects)
 	void RemoveSingleEffect(TEnumAsByte<EEffectType> appiledEffectType);
 
-protected:
+	UFUNCTION(BlueprintCallable, Category = EffectHelpers)
+		void DecreaseAttributeForTime(float DecreaseValue);
 
+	UFUNCTION(BlueprintCallable, Category = EffectHelpers)
+		void TemporarlyDrainHealth(float DrainAmount);
+	UFUNCTION(BlueprintCallable, Category = EffectHelpers)
+		void TemporarlyDrainMaxHealth(float DrainAmount);
+
+	UFUNCTION(BlueprintCallable, Category = EffectHelpers)
+		uint8 GetHexesFromTarget();
+protected:
 	UPROPERTY(BlueprintReadOnly, Category=NativeProperties)
 	int32 EffectsRemoved; //effects removed by this effect used with RemoveSingleEffect. If only used once, usually will be 0 or 1, if RemoveSingleEffect with ticker, it might vary!
 
@@ -206,14 +218,17 @@ protected:
 	UFUNCTION(BlueprintCallable, Category=EffectHelpers)
 	bool CheckHealthTreshold(float threshold);
 
+protected:
+	virtual void SelfRemoveEffect();
 private:
-	UWorld* GetCurrentWorld(UObject* worldContext);
-	UWorld* CurrentWorld;
 	float currentTickTime;
 	float currentDuration;
-
+	float OriginalConstitution;
+	float AttributeDecrease;
+	float MaxHealthDrain;
+	void RestoreOriginalAttributes(float DecreasedValue);
+	void RestoreOriginalHealth(float HealthValue);
+	void RestoreOriginalMaxHealth(float HealthValue);
 protected:
 	virtual class UWorld* GetWorld() const OVERRIDE;
-public:
-	void SetCurrentWorld(UWorld* world);
 };

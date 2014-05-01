@@ -15,12 +15,6 @@ URPGEffectBase::URPGEffectBase(const class FPostConstructInitializeProperties& P
 void URPGEffectBase::Tick( float DeltaTime)
 {
 	//Super::Tick(DeltaTime);
-	if(!AffectedTarget)
-		return;
-	if(!GetWorld())
-		return;
-	if(!IsEffectActive)
-		return;
 
 	currentTickTime += DeltaTime;
 	if(currentTickTime >= TickDuration)
@@ -34,9 +28,12 @@ void URPGEffectBase::Tick( float DeltaTime)
 	currentDuration += DeltaTime;
 	if(currentDuration >= Duration)
 	{
+		RestoreOriginalAttributes(AttributeDecrease);
+		RestoreOriginalMaxHealth(MaxHealthDrain);
 		currentDuration = 0;
 		OnEffectEnd();
-		AffectedTarget->EffectManager->RemoveEffect(this);
+		SelfRemoveEffect();
+		//AffectedTarget->EffectManager->RemoveEffect(this);
 	}
 	OnEffectTickFrame(); //this will tick every frame.
 	SetAttributeUpdates();
@@ -80,14 +77,18 @@ bool URPGEffectBase::CheckHealthTreshold(float threshold)
 {
 	return false;
 }
+
+void URPGEffectBase::AddEffect()
+{
+	//do not do anything.
+}
 void URPGEffectBase::Initialize()
 {
 	IsEffectActive = false;
 	EffectsRemoved = 0;
 	if(AffectedTarget)
 	{
-		UWorld* world = GetCurrentWorld(AffectedTarget);
-		if(CurrentWorld)
+		if(GetWorld())
 		{
 			//OnEffectAppiled_Implementation();
 			OnEffectAppiled();
@@ -108,49 +109,10 @@ void URPGEffectBase::Deinitialize()
 void URPGEffectBase::OnEffectAppiled_Implementation()
 {
 }
-//
-//void URPGEffectBase::OnEffectTick_Implementation()
-//{
-//}
-//
-//void URPGEffectBase::OnValueChanged_Implementation()
-//{
-//}
-//
-//void URPGEffectBase::OnEffectRemoved_Implementation()
-//{
-//	//ARPGCharacter* GC = Cast<ARPGCharacter>(AffectedTarget);
-//	//if(GC)
-//	//{
-//	//	UWorld* world = GetCurrentWorld(GC);
-//	//	if(world)
-//	//	{
-//	//		FTimerDynamicDelegate tdd;
-//	//		tdd.BindDynamic(this, &URPGEffectBase::RemoveFromArray);
-//	//		float currentTime = world->GetTimerManager().GetTimerElapsed(tdd);
-//	//		if(currentTime >= Duration)
-//	//		{
-//	//			timer = true;
-//	//		}
-//	//		else
-//	//		{
-//	//			timer = false;
-//	//		}
-//	//	}
-//	//}
-//}
 
 void URPGEffectBase::OnEffectTickFrame_Implementation()
 {
-
-}
-
-void URPGEffectBase::SetCurrentWorld(UWorld* world)
-{
-	if(world)
-	{
-		CurrentWorld = world;
-	}
+	
 }
 
 
@@ -177,14 +139,63 @@ void URPGEffectBase::RemoveSingleEffect(TEnumAsByte<EEffectType> appiledEffectTy
 	//}
 	////return effectCount;
 }
+void URPGEffectBase::DecreaseAttributeForTime(float DecreaseValue)
+{
+	if (AffectedTarget)
+	{
+		OriginalConstitution = AffectedTarget->BaseAttributes.Constitution;
+		AttributeDecrease = DecreaseValue;
+		AffectedTarget->BaseAttributes.Constitution -= DecreaseValue;
+	}
+}
+void URPGEffectBase::RestoreOriginalAttributes(float DecreasedValue)
+{
+	if (AffectedTarget)
+	{
+		AffectedTarget->BaseAttributes.Constitution += DecreasedValue;
+	}
+}
+void URPGEffectBase::TemporarlyDrainHealth(float DrainAmount)
+{
+
+}
+void URPGEffectBase::RestoreOriginalHealth(float HealthValue)
+{
+
+}
+
+void URPGEffectBase::TemporarlyDrainMaxHealth(float DrainAmount)
+{
+	if (AffectedTarget)
+	{
+		MaxHealthDrain = DrainAmount;
+		AffectedTarget->SubtractMaxHealth(DrainAmount);
+	}
+}
+void URPGEffectBase::RestoreOriginalMaxHealth(float HealthValue)
+{
+	if (AffectedTarget)
+	{
+		AffectedTarget->AddMaxHealth(HealthValue);
+	}
+}
+
+uint8 URPGEffectBase::GetHexesFromTarget()
+{
+	return AffectedTarget->EffectManager->EffectsOnCharacter.Hexes;
+}
+
+void URPGEffectBase::SelfRemoveEffect()
+{
+
+}
 
 UWorld* URPGEffectBase::GetWorld() const
 {
-	UWorld* const world = GEngine->GetWorldFromContextObject(CausedBy);
-	return world ? world : NULL;
-}
-UWorld* URPGEffectBase::GetCurrentWorld(UObject* worldContext)
-{
-	UWorld* const World = GEngine->GetWorldFromContextObject(worldContext);
-    return World ? World : NULL;
+	if (AffectedTarget)
+	{
+		UWorld* const world = GEngine->GetWorldFromContextObject(AffectedTarget);
+		return world ? world : NULL;
+	}
+	return NULL;
 }

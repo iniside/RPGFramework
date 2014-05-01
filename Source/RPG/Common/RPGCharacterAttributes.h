@@ -28,7 +28,25 @@ struct FCharacterAttributes
 	{
 	}
 };
+USTRUCT(BlueprintType)
+struct FCharacterSecondaryAttributes
+{
+	GENERATED_USTRUCT_BODY()
 
+	/*
+	Weight of current equiped items (total)
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterSecondaryAttributes)
+	float Encumbrance;
+
+	/*
+	Basic movment speed.
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterSecondaryAttributes)
+	float MovmentSpeed;
+
+
+};
 USTRUCT(BlueprintType)
 struct FCharacterDerivedAttributes
 {

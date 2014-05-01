@@ -10,7 +10,12 @@ ARPGPlayerController::ARPGPlayerController(const class FPostConstructInitializeP
 	
 }
 
-
+void ARPGPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+	PlayerCameraManager->ViewPitchMax = 70.0f;
+	PlayerCameraManager->ViewPitchMin = -70.0f;
+}
 void ARPGPlayerController::PrintAllActorsLocations()
 {
 	//EngineUtils.h

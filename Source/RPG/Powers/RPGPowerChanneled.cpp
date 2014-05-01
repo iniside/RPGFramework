@@ -8,39 +8,40 @@
 
 
 URPGPowerChanneled::URPGPowerChanneled(const class FPostConstructInitializeProperties& PCIP)
-	: Super(PCIP)
+: Super(PCIP)
 {
-		
-	
+
+
 }
 
-void URPGPowerChanneled::Tick( float DeltaTime)
+void URPGPowerChanneled::Tick(float DeltaTime)
 {
 	//Super::Tick(DeltaTime);
-	channelIntervalElapsed += DeltaTime;
-		if(PowerState.IsOnCooldown)
+	
+	if (PowerState.IsOnCooldown)
 	{
 		currentRechargeTime += DeltaTime;
-		if(currentRechargeTime >= RechargeTime)
+		if (currentRechargeTime >= RechargeTime)
 		{
 			PowerState.IsOnCooldown = false;
 			currentRechargeTime = 0;
 		}
 	}
-	if(PowerState.IsCasting)
+	//if(PowerState.IsCasting)
+	//{
+	//	currentCastTime += DeltaTime;
+	//	if(currentCastTime >= CastingTime)
+	//	{
+	//		PowerState.IsCasting = false;
+	//		PowerState.IsCasted = true;
+	//		CastPower();
+	//		currentCastTime = 0;
+	//	}
+	//}
+	channelIntervalElapsed += DeltaTime;
+	if (isChanneled)
 	{
-		currentCastTime += DeltaTime;
-		if(currentCastTime >= CastingTime)
-		{
-			PowerState.IsCasting = false;
-			PowerState.IsCasted = true;
-			CastPower();
-			currentCastTime = 0;
-		}
-	}
-	if(isChanneled)
-	{
-		if(channelIntervalElapsed >= ChannelInterval)
+		if (channelIntervalElapsed >= ChannelInterval)
 		{
 			OnCastPower();
 			channelIntervalElapsed = 0;
@@ -72,6 +73,7 @@ void URPGPowerChanneled::OnCastStart()
 	//		}
 	//	}
 	//}
+	CastPower();
 }
 
 void URPGPowerChanneled::CastPower()
@@ -90,4 +92,8 @@ void URPGPowerChanneled::OnCastStop()
 void URPGPowerChanneled::StartChannel()
 {
 	isChanneled = true;
+}
+void URPGPowerChanneled::StopChannel()
+{
+
 }

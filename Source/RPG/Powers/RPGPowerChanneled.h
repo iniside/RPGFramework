@@ -5,13 +5,6 @@
 #include "RPGPowerBase.h"
 #include "RPGPowerChanneled.generated.h"
 
-enum EPowerChannelState
-{
-	ChannelStart,
-	Channeling,
-	ChannelEnd
-};
-
 UCLASS(BlueprintType, Blueprintable)
 class URPGPowerChanneled : public URPGPowerBase
 {
@@ -33,11 +26,10 @@ class URPGPowerChanneled : public URPGPowerBase
 
 	virtual void OnCastStart() OVERRIDE;
 	virtual void OnCastStop() OVERRIDE;
-	virtual void CastPower() OVERRIDE;
 protected:
-	EPowerChannelState PowerChannelState;
 	void StartChannel();
-	
+	void StopChannel();
+	void CastPower();
 private:
 	float channelIntervalElapsed;
 	bool isChanneled;

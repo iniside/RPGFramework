@@ -11,15 +11,14 @@ class URPGEffectBPLibrary : public UBlueprintFunctionLibrary
 	GENERATED_UCLASS_BODY()
 
 public:
-	/** 
-		damageAmount - reduce movment speed by X precent (clamped 0..1)
-	*/
-	UFUNCTION(BlueprintCallable, Category=PowerEffects)
-	static void ReduceMovmentSpeed(float damageAmount, float duration, AActor* damageTarget, AActor* causer);
-
 	UFUNCTION(BlueprintCallable, Category=PowerEffects)
 	static void ApplyEffect(ARPGCharacter* effectTarget, ARPGCharacter* causedBy, TSubclassOf<class URPGEffectBase> appiledEffect);
 
+	UFUNCTION(BlueprintCallable, Category = PowerEffects)
+	static void ApplyEffectTest(ARPGCharacter* effectTarget, ARPGCharacter* causedBy, TSubclassOf<class URPGEffectBase> appiledEffect);
+
+	UFUNCTION(BlueprintCallable, Category = Conditions)
+		static void ApplyBleedCondition(ARPGCharacter* conditionTarget, ARPGCharacter* causeBy, TSubclassOf<class URPGConditionBleed> bleed);
 	/*
 	Ok these two remove functions, are really worthless as they are very generalized, take lots of arguments, and really,
 	not doing entirely what I want them to do.
@@ -32,9 +31,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category=PowerEffects)
 	static void RemoveEffects(AActor* effectTarget, TEnumAsByte<EEffectType> appiledEffectType);
-
-	UFUNCTION(BlueprintCallable, Category=PowerEffects)
-	static void ApplyTemporaryDamage(AActor* effectTarget, float damage);
 
 	UFUNCTION(BlueprintCallable, Category=PowerEffects)
 	static void MultiRadialHitCheck(FHitResult hitData, float radius, TArray<struct FHitResult>& OutHitsResult);

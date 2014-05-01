@@ -12,6 +12,6 @@ class ARPGPlayerController : public APlayerController
 	GENERATED_UCLASS_BODY()
 
 	void PrintAllActorsLocations();
-	
+	virtual void BeginPlay() OVERRIDE;
 	//TSubobjectPtr<URPGPowerManagerComponent> GetCharacterPowerManager();
 };

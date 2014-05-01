@@ -2,7 +2,7 @@
 
 #pragma once
 #include "RPG.h"
-#include "../Effects/RPGEffectBase.h"
+#include "../Common/RPGCharacterStructs.h"
 #include "RPGEffectManagerComponent.generated.h"
 
 /**
@@ -23,17 +23,49 @@ class URPGEffectManagerComponent : public UActorComponent
 	GENERATED_UCLASS_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=EffectList)
+	UPROPERTY(BlueprintReadWrite, Category=EffectList)
 	TArray<class URPGEffectBase*> EffectsList;
 
-	void AddEffect(URPGEffectBase* newEffect);
+	UPROPERTY(BlueprintReadWrite, Category=ConditionsList)
+	TArray<class URPGConditionBleed*> ConditionBleeds;
 
-	void DestroyEffect(URPGEffectBase* EffectToDestroy);
+	void AddBleed(class URPGConditionBleed* condition);
+	void RemoveBleed(class URPGConditionBleed* condition);
+	void AddEffect(class URPGEffectBase* newEffect);
+
+	void DestroyEffect(class URPGEffectBase* EffectToDestroy);
 
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) OVERRIDE;
 	
-	void RemoveEffect(URPGEffectBase* effectToRemove);
+	void RemoveEffect(class URPGEffectBase* effectToRemove);
+
+	void AddCondition(class URPGConditionBase* condition);
+
+	void RemoveCondition(class URPGConditionBase* condition);
+
+	void DestroyCondition(class URPGConditionBase* condition);
 	//void RemoveEffectByType(TEnumAsByte<EEffectType> effectType);
+
+	/*
+	 * Effects On Character
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = EffectsOnCharacter)
+	uint8 Hexes;
+	
+	UPROPERTY(BlueprintReadOnly, Category = EffectsOnCharacter)
+	uint8 Enchantments;
+	
+	UPROPERTY(BlueprintReadWrite, Category = EffectsOnCharacter)
+	uint8 Curses;
+	/*
+	* This overall number of conditions, without distinguishing by type.
+	*/
+	UPROPERTY(BlueprintReadOnly, Category = EffectsOnCharacter)
+	uint8 Conditions;
+
+	UPROPERTY(BlueprintReadOnly, Category = EffectsOnCharacter)
+	uint8 Boons;
+
 private:
 	URPGEffectBase* NewEffect;
 	float tickTime;

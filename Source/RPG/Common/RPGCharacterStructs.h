@@ -48,11 +48,45 @@ struct FEffectsOnCharacter
 	UPROPERTY(BlueprintReadWrite, Category=EffectsOnCharacter)
 	uint8 Curses;
 
+	/*
+	* This overall number of conditions, without distinguishing by type.
+	*/
 	UPROPERTY(BlueprintReadWrite, Category=EffectsOnCharacter)
 	uint8 Conditions;
 
 	UPROPERTY(BlueprintReadWrite, Category=EffectsOnCharacter)
 	uint8 Boons;
+};
+
+/*
+* most conditions stack in duration,
+* so in theory they should never exceed 1
+* it might be wise to simply change them to booleans
+* only few will stack in intensity
+* which essentialy means, there can be multiple conditions of the same type
+* working at the same time.
+*/
+USTRUCT(BlueprintType)
+struct FConditionsOnCharacter
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = ConditionsOnCharacter)
+	uint8 Bleeds;
+	UPROPERTY(BlueprintReadWrite, Category = ConditionsOnCharacter)
+	uint8 Poison;
+	UPROPERTY(BlueprintReadWrite, Category = ConditionsOnCharacter)
+	uint8 Burning;
+	UPROPERTY(BlueprintReadWrite, Category = ConditionsOnCharacter)
+	uint8 Wounded;
+	UPROPERTY(BlueprintReadWrite, Category = ConditionsOnCharacter)
+	uint8 Crippled;
+	UPROPERTY(BlueprintReadWrite, Category = ConditionsOnCharacter)
+	uint8 Weakness;
+	UPROPERTY(BlueprintReadWrite, Category = ConditionsOnCharacter)
+	uint8 Dazed;
+	UPROPERTY(BlueprintReadWrite, Category = ConditionsOnCharacter)
+	uint8 Fear;
 };
 /*
 Character conditions.

@@ -1,12 +1,9 @@
 // Copyright 1998-2013 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-//#include "RPG.h"
+#include "Object.h"
 #include "../Common/RPGSharedEnums.h"
-//#include "../RPGCharacter.h"
-//#include "../RPGProjectile.h"
 #include "../Items/RPGWeaponBase.h"
-//#include "../Effects/RPGEffectBase.h"
 #include "RPGPowerBase.generated.h"
 
 /**
@@ -39,25 +36,20 @@ DECLARE_DELEGATE_RetVal(float, FCastTimeDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCastTimeDelegateTwo, float, currentCastTime);
 
 UENUM()
-enum EPowerType
-{
-	Spell,
-	Spell_Mele, //spell mele means spell that is required to use mele weapon,
-	//not the one that have mele range ;)
-	Physical_Mele, 
-	Physical_Ranged, //physical ranged is for bows, throwing weapon etc.
-	Ranged //ranged is for guns, crossbows weapon that do not really require physical strenght to
-	//make shot, although strenght still contribute to them.
-};
-
-UENUM()
 enum EPowerFireMode
 {
 	Channeled, //hold button to channel power.
+	Channeled_Auto, //press button and power will channel automatically
 	Instant, //pres button and fire instantly (after animation finish)
 	CastTime, //press button and start casting
-	CastTime_Charged //hold button begin cast. You must hold button for entire duration, other wis
+	CastTime_Charged //hold button begin cast. You must hold button for entire duration, otherwise
 	//ability is canceled, and is not caseted
+};
+
+enum EPowerPreparationState
+{
+	Prepared,
+	Unprepared
 };
 
 struct FPowerState
@@ -65,6 +57,7 @@ struct FPowerState
 	bool IsCasting;
 	bool IsCasted;
 	bool IsOnCooldown;
+	bool IsChanneled;
 };
 UCLASS(BlueprintType, Blueprintable)
 class URPGPowerBase : public UObject, public FTickableGameObject
@@ -84,6 +77,14 @@ class URPGPowerBase : public UObject, public FTickableGameObject
 	virtual bool IsTickable() const OVERRIDE;
 	virtual TStatId GetStatId() const OVERRIDE;
 
+
+	bool IsPrepared;
+	/*
+	* if true first use, will make power prepared ie. aoe power will show targeting circle
+	* second buttton press will activate power.
+	*/
+	UPROPERTY(EditAnywhere, Category=BaseProperties)
+	bool NeedsPreparation;
 	/**
 	Resource Cost BEGIN
 	**/
@@ -117,8 +118,6 @@ protected:
 	**/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=BaseProperties)
 	float RechargeTime;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=BaseProperties)
-	float CastingTime;
 
 	UPROPERTY(EditAnywhere, Category=BaseProperties)
 	TEnumAsByte<EPowerType> PowerType;
@@ -136,6 +135,9 @@ protected:
 	class ARPGCharacter* PowerOwner; //use TWeakObjectPtr because Garbage Collector couldn't grasp deferencing it while aburptly closing PIE and using normal pointer (;.
 	//UPROPERTY(BlueprintReadWrite, Category=NativeVars)
 	TWeakObjectPtr<class ARPGWeaponBase> MainCasterWeapon;
+
+	UFUNCTION(BlueprintImplementableEvent)
+		void OnPowerPrepared();
 
 	/*
 		Particle Effects BEGIN
@@ -226,7 +228,6 @@ public:
 	virtual void OnCastStart();
 	virtual void OnCastStop();
 
-	virtual void CastPower();
 
 	UFUNCTION(BlueprintNativeEvent)
 	void OnCastPower();
@@ -248,7 +249,7 @@ private:
 protected:
 	float currentRechargeTime;
 	float currentCastTime;
-	
+	EPowerPreparationState preparationState;
 	
 	/*
 		this function is not particularly correct. As it also should return other casting locations that are not weapon. 

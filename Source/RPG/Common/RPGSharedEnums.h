@@ -33,5 +33,27 @@ enum EEffectType
 	Effect_Enchantment,
 	Effect_Curse,
 	Effect_Condition,
-	Effect_Boon
+	Effect_Boon,
+	Effect_Disease
+};
+UENUM()
+enum EPowerType
+{
+	Power_Spell,
+	Power_Mele,
+	Power_Ranged,
+	Power_RangedPhysical
+};
+UENUM()
+enum EConditionType
+{
+	Cond_Bleed,
+	Cond_Poison,
+	Cond_Burning,
+	Cond_Wounded,
+	Cond_Blind,
+	Cond_Crippled,
+	Cond_Weakness,
+	Cond_Dazed,
+	Cond_Fear
 };

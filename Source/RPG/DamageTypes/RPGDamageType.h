@@ -40,7 +40,7 @@ Target character have temporary debuff that will increase incoming magical damag
  and then apply bonus damage to get final result.
  Although most player will expect shown above behavior as more logical.
 
- DamageTypes are also used to apply damage to attrobites. Like magic, intelligence, strenght constitiun. Can be used
+ DamageTypes are also used to apply damage to attributes. Like magic, intelligence, strenght constitiun. Can be used
  reduce character movment speed etc. It is all done with combination of data structs and implementing DealDamage function.
 
 */

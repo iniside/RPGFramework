@@ -21,9 +21,6 @@ public:
 		FCharacterAttributes BaseAttributes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterAttributes)
-		FEffectsOnCharacter EffectsOnCharacter;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterAttributes)
 	FAttributesHelpers AttributeHelpers;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=CharacterAttributes)
@@ -40,6 +37,13 @@ public:
 
 	//Manager Components
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		TSubobjectPtr<class USpringArmComponent> CameraBoom;
+
+	/** Follow camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		TSubobjectPtr<class UCameraComponent> FollowCamera;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Componenets)
 		TSubobjectPtr<class URPGEquipmentManagerComponent> EquipmentManager;
 
@@ -54,6 +58,7 @@ public:
 		void ActionButtonOne();
 	UFUNCTION()
 		void ActionButtonOneReleased();
+
 	UPROPERTY(BlueprintReadOnly, Transient, Category = ActionBar)
 		URPGPowerBase* ActionButtonOneObj;
 
@@ -72,6 +77,7 @@ public:
 	virtual void PostLoad() OVERRIDE;
 	virtual void Tick(float DeltaSeconds) OVERRIDE;
 	virtual void OnConstruction(const FTransform& Transform) OVERRIDE;
+	virtual void BeginPlay() OVERRIDE;
 protected:
 
 	/** Called for forwards/backward input */
@@ -109,6 +115,8 @@ protected:
 public:
 	void SetHealth(float value);
 	float GetMaxHealth();
+	void SubtractMaxHealth(float amount);
+	void AddMaxHealth(float amount);
 
 	float GetCurrentEnergy();
 	float GetCurrentEndurance();
@@ -117,5 +125,7 @@ public:
 	void SubtractCurrentEnergy(float amount);
 	void SubtractCurrentEndurance(float amount);
 	void SubtractCurrentHealth(float amount);
+
+	void SetWalkingSpeed();
 };
 

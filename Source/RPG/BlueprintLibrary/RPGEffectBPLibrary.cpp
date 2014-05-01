@@ -1,25 +1,16 @@
 #pragma once
 #include "RPG.h"
 #include "../Effects/RPGEffectBase.h"
-#include "RPGEffectBPLibrary.h"
+#include "../Effects/Conditions/RPGConditionBleed.h"
 #include "../RPGCharacter.h"
 #include "../Components/RPGEffectManagerComponent.h"
-
+#include "RPGEffectBPLibrary.h"
 URPGEffectBPLibrary::URPGEffectBPLibrary(const class FPostConstructInitializeProperties& PCIP)
 	: Super(PCIP)
 {
 	
 }
 
-void URPGEffectBPLibrary::ReduceMovmentSpeed(float damageAmount, float duration, AActor* damageTarget, AActor* causer) //float duration ? struct EffectMovmentSpeed
-{
-	ARPGCharacter* character = Cast<ARPGCharacter>(damageTarget);
-	damageAmount = FMath::Clamp(damageAmount, 0.0f, 1.0f);
-	float originalMovment = character->CharacterMovement->MaxWalkSpeed;
-	character->CharacterMovement->MaxWalkSpeed = character->CharacterMovement->MaxWalkSpeed * damageAmount;
-
-	//return ems;
-}
 
 void URPGEffectBPLibrary::ApplyEffect(ARPGCharacter* effectTarget, ARPGCharacter* causedBy, TSubclassOf<class URPGEffectBase> appiledEffect)
 {
@@ -30,8 +21,37 @@ void URPGEffectBPLibrary::ApplyEffect(ARPGCharacter* effectTarget, ARPGCharacter
 			URPGEffectBase* effect = ConstructObject<URPGEffectBase>(appiledEffect);
 			effect->AffectedTarget = effectTarget;
 			effect->CausedBy = causedBy;
-			effect->SetCurrentWorld(effectTarget->GetWorld());
 			effectTarget->EffectManager->AddEffect(effect);
+		}
+	}
+}
+void URPGEffectBPLibrary::ApplyEffectTest(ARPGCharacter* effectTarget, ARPGCharacter* causedBy, TSubclassOf<class URPGEffectBase> appiledEffect)
+{
+	if (effectTarget)
+	{
+		if (causedBy)
+		{
+			URPGEffectBase* effect = ConstructObject<URPGEffectBase>(appiledEffect);
+			effect->AffectedTarget = effectTarget;
+			effect->CausedBy = causedBy;
+			effect->AddEffect();
+		}
+	}
+}
+
+void URPGEffectBPLibrary::ApplyBleedCondition(ARPGCharacter* conditionTarget, ARPGCharacter* causeBy, TSubclassOf<class URPGConditionBleed> bleed)
+{
+	if (conditionTarget)
+	{
+		if (causeBy)
+		{
+			if (bleed)
+			{
+				URPGConditionBleed* bleedObj = ConstructObject<URPGConditionBleed>(bleed);
+				bleedObj->SetTarget(conditionTarget);
+				bleedObj->SetAppiledBy(causeBy);
+				conditionTarget->EffectManager->ConditionBleeds.Add(bleedObj);
+			}
 		}
 	}
 }
@@ -63,15 +83,6 @@ void URPGEffectBPLibrary::RemoveEffects(AActor* effectTarget, TEnumAsByte<EEffec
 				}
 			}
 		}
-	}
-}
-
-void URPGEffectBPLibrary::ApplyTemporaryDamage(AActor* effectTarget, float damage)
-{
-	ARPGCharacter* GC = Cast<ARPGCharacter>(effectTarget);
-	if(GC)
-	{
-		
 	}
 }
 

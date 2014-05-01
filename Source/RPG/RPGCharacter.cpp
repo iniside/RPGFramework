@@ -18,6 +18,17 @@ ARPGCharacter::ARPGCharacter(const class FPostConstructInitializeProperties& PCI
 	LowOffset = FVector(-380.0f, 35.0f, 15.0f);
 	MidOffset = FVector(-380.0f, 35.0f, 60.0f);
 	HighOffset = FVector(-380.0f, 35.0f, 150.0f); //x,y,z
+
+	// Create a camera boom (pulls in towards the player if there is a collision)
+	CameraBoom = PCIP.CreateDefaultSubobject<USpringArmComponent>(this, TEXT("CameraBoom"));
+	CameraBoom->AttachTo(RootComponent);
+	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character
+	CameraBoom->bUseControllerViewRotation = true; // Rotate the arm based on the controller
+	CameraBoom->SocketOffset = FVector(0.0f, 50.0f, 100.0f);
+	// Create a follow camera
+	FollowCamera = PCIP.CreateDefaultSubobject<UCameraComponent>(this, TEXT("FollowCamera"));
+	FollowCamera->AttachTo(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
+	FollowCamera->bUseControllerViewRotation = false; // Camera does not rotate relative to arm
 	// set our turn rates for input
 	//BaseTurnRate = 45.f;
 	//BaseLookUpRate = 45.f;
@@ -28,143 +39,145 @@ ARPGCharacter::ARPGCharacter(const class FPostConstructInitializeProperties& PCI
 	EquipmentManager = PCIP.CreateDefaultSubobject<URPGEquipmentManagerComponent>(this, TEXT("EquipmentManager"));
 	
 	PowerManager = PCIP.CreateDefaultSubobject<URPGPowerManagerComponent>(this, TEXT("PowerManager"));
-	
+	PowerManager->bAutoActivate = true;
 	EffectManager = PCIP.CreateDefaultSubobject<URPGEffectManagerComponent>(this, TEXT("EffectManager"));
+	EffectManager->bAutoActivate = true;
 	EffectManager->Activate();
 	EffectManager->bAllowConcurrentTick = true;
 	// Configure character movement
 	CharacterMovement->bOrientRotationToMovement = true; // Character moves in the direction of input...	
-
+	
 }
 void ARPGCharacter::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult)
 {
-	FVector Loc, Pos, HitLocation, HitNormal, EyeLoc, FinalPos;
-	FRotator Rot, EyeRot;
-	FPOV OrigPOV;
-	//It should be header file, but for now it will work.
-	//FVector LowOffset = FVector(-380.0f,35.0f, 15.0f);
-	//FVector MidOffset = FVector(-380.0f,35.0f, 60.0f);
-	//FVector HighOffset = FVector(-380.0f,35.0f,150.0f); //x,y,z
+	Super::CalcCamera(DeltaTime, OutResult);
+	//FVector Loc, Pos, HitLocation, HitNormal, EyeLoc, FinalPos;
+	//FRotator Rot, EyeRot;
+	//FPOV OrigPOV;
+	////It should be header file, but for now it will work.
+	////FVector LowOffset = FVector(-380.0f,35.0f, 15.0f);
+	////FVector MidOffset = FVector(-380.0f,35.0f, 60.0f);
+	////FVector HighOffset = FVector(-380.0f,35.0f,150.0f); //x,y,z
 
-	//for some reason using blueprint Offset doesn't work.
-	//so we redecalre it locally and assign value trough blueprint.
-	FVector LowOffset = this->LowOffset;
-	FVector MidOffset = this->MidOffset;
-	FVector HighOffset = this->HighOffset; //x,y,z
-	//APlayerController* PC;
-	//int32 sizeX, sizeY;
+	////for some reason using blueprint Offset doesn't work.
+	////so we redecalre it locally and assign value trough blueprint.
+	//FVector LowOffset = this->LowOffset;
+	//FVector MidOffset = this->MidOffset;
+	//FVector HighOffset = this->HighOffset; //x,y,z
+	////APlayerController* PC;
+	////int32 sizeX, sizeY;
 
-	//if(OutVT.Target)
+	////if(OutVT.Target)
+	////{
+	////	PC = Cast<APlayerController>(OutVT.Target->GetInstigatorController());
+	////	PC->GetViewportSize(sizeX, sizeY);
+	////	float aspectRatio = 0.0f;
+	////	aspectRatio = (float)sizeX / (float)sizeY;
+	////	if(aspectRatio >= 1.333f && aspectRatio < 1.777f)
+	////	{
+	////		LowOffset = FVector(-100.0f,10.0f, 5.0f);
+	////		MidOffset = FVector(-100.0f,10.0f, 0.0f);
+	////		HighOffset = FVector(-110.0f,10.0f,80.0f); 
+	////	}
+	////	else if (aspectRatio > 1.76f)
+	////	{
+	////		LowOffset = FVector(-120.0f,10.0f, 5.0f);
+	////		MidOffset = FVector(-200.0f,10.0f, 0.0f);
+	////		HighOffset = FVector(-190.0f,10.0f,70.0f); 
+	////	}
+	////	else
+	////	{
+	////		LowOffset = FVector(-120.0f,10.0f, 5.0f);
+	////		MidOffset = FVector(-200.0f,10.0f, 0.0f);
+	////		HighOffset = FVector(-180.0f,10.0f,80.0f); 
+	////	}
+	////}
+
+
+	//FVector FinalOffset = MidOffset;
+
+	//float pitchXX = 0;
+	//float pitchZZ = 0;
+	////OrigPOV = OutVT.POV;
+	////OutVT.Target->GetActorEyesViewPoint(EyeLoc, EyeRot);
+	//this->GetActorEyesViewPoint(EyeLoc, EyeRot);
+	//Loc = this->GetActorLocation();
+	////normalize axis to space between -180 and 180,
+	//// we need because by default rotator is between 0 and 360
+	//float normalizedEyeRotPitch = EyeRot.NormalizeAxis(EyeRot.Pitch);
+	////we do everything in Absolute numbers and then just multipli by -/+1
+	////looking up
+	//if (EyeRot.NormalizeAxis(EyeRot.Pitch) > 0.0f)
 	//{
-	//	PC = Cast<APlayerController>(OutVT.Target->GetInstigatorController());
-	//	PC->GetViewportSize(sizeX, sizeY);
-	//	float aspectRatio = 0.0f;
-	//	aspectRatio = (float)sizeX / (float)sizeY;
-	//	if(aspectRatio >= 1.333f && aspectRatio < 1.777f)
+	//	//FinalOffset = LowOffset;
+	//	float offsetX = FMath::Abs(LowOffset.X) / LowOffset.X;
+	//	float offsetZ = FMath::Abs(LowOffset.Z) / LowOffset.Z;
+
+	//	//HighOffset.X = math.Abs(HighOffset.X);
+	//	//HighOffset.Z = math.Abs(HighOffset.Z);
+	//	LowOffset = LowOffset.GetAbs();
+	//	MidOffset = MidOffset.GetAbs();
+	//	FinalOffset = FinalOffset.GetAbs(); //we convert to absolute number everything is +
+
+	//	float pitchX = (LowOffset.X - MidOffset.X) / 60; //-?
+	//	pitchXX = pitchX * normalizedEyeRotPitch; // -
+	//	pitchXX = FMath::Abs(pitchXX); // make sure result is +
+	//	float pitchZ = (LowOffset.Z - MidOffset.Z) / 60; //180 / -60 //-
+	//	pitchZZ = pitchZ * normalizedEyeRotPitch; // -
+	//	pitchZZ = FMath::Abs(pitchZZ); //make sure it is +
+
+	//	FinalOffset.X = FinalOffset.X + (pitchXX);
+	//	FinalOffset.X = FMath::Clamp(FinalOffset.X, LowOffset.X, MidOffset.X) * offsetX;//we have issue here what if the values will be positive ?
+	//	FinalOffset.Z = FinalOffset.Z + (pitchZZ);
+	//	if (LowOffset.Z > MidOffset.Z)//guess other offset adjustments also would need that.
 	//	{
-	//		LowOffset = FVector(-100.0f,10.0f, 5.0f);
-	//		MidOffset = FVector(-100.0f,10.0f, 0.0f);
-	//		HighOffset = FVector(-110.0f,10.0f,80.0f); 
-	//	}
-	//	else if (aspectRatio > 1.76f)
-	//	{
-	//		LowOffset = FVector(-120.0f,10.0f, 5.0f);
-	//		MidOffset = FVector(-200.0f,10.0f, 0.0f);
-	//		HighOffset = FVector(-190.0f,10.0f,70.0f); 
+	//		FinalOffset.Z = FMath::Clamp(FinalOffset.Z, MidOffset.Z, LowOffset.Z) * offsetZ;
 	//	}
 	//	else
 	//	{
-	//		LowOffset = FVector(-120.0f,10.0f, 5.0f);
-	//		MidOffset = FVector(-200.0f,10.0f, 0.0f);
-	//		HighOffset = FVector(-180.0f,10.0f,80.0f); 
+	//		FinalOffset.Z = FMath::Clamp(FinalOffset.Z, LowOffset.Z, MidOffset.Z) * offsetZ;
 	//	}
+	//	FinalOffset.Y = LowOffset.Y;
+	//} //looking down
+	//else if (EyeRot.NormalizeAxis(EyeRot.Pitch) < 0.0f)
+	//{
+	//	float offsetX = FMath::Abs(HighOffset.X) / HighOffset.X;
+	//	float offsetZ = FMath::Abs(HighOffset.Z) / HighOffset.Z;
+
+	//	//HighOffset.X = math.Abs(HighOffset.X);
+	//	//HighOffset.Z = math.Abs(HighOffset.Z);
+	//	HighOffset = HighOffset.GetAbs();
+	//	MidOffset = MidOffset.GetAbs();
+	//	FinalOffset = FinalOffset.GetAbs(); //we convert to absolute number everything is +
+
+	//	float pitchX = (HighOffset.X - MidOffset.X) / -60; //-?
+	//	pitchXX = pitchX * normalizedEyeRotPitch; // -
+	//	pitchXX = FMath::Abs(pitchXX); // make sure result is +
+	//	float pitchZ = (HighOffset.Z - MidOffset.Z) / -60; //180 / -60 //-
+	//	pitchZZ = pitchZ * normalizedEyeRotPitch; // -
+	//	pitchZZ = FMath::Abs(pitchZZ);
+
+	//	FinalOffset.X = FinalOffset.X + (pitchXX);
+	//	FinalOffset.X = FMath::Clamp(FinalOffset.X, MidOffset.X, HighOffset.X) * offsetX;//we have issue here what if the values will be positive ?
+	//	FinalOffset.Z = FinalOffset.Z + (pitchZZ);
+	//	FinalOffset.Z = FMath::Clamp(FinalOffset.Z, MidOffset.Z, HighOffset.Z) * offsetZ;
+	//	FinalOffset.Y = HighOffset.Y;
+	//} //looking directly straight pitch = 0, dunno if that ever happen.
+	//else
+	//{
+	//	FinalOffset = MidOffset;
 	//}
 
-
-	FVector FinalOffset = MidOffset;
-
-	float pitchXX = 0;
-	float pitchZZ = 0;
-	//OrigPOV = OutVT.POV;
-	//OutVT.Target->GetActorEyesViewPoint(EyeLoc, EyeRot);
-	this->GetActorEyesViewPoint(EyeLoc, EyeRot);
-	Loc = this->GetActorLocation();
-	//normalize axis to space between -180 and 180,
-	// we need because by default rotator is between 0 and 360
-	float normalizedEyeRotPitch = EyeRot.NormalizeAxis(EyeRot.Pitch);
-	//we do everything in Absolute numbers and then just multipli by -/+1
-	//looking up
-	if (EyeRot.NormalizeAxis(EyeRot.Pitch) > 0.0f)
-	{
-		//FinalOffset = LowOffset;
-		float offsetX = FMath::Abs(LowOffset.X) / LowOffset.X;
-		float offsetZ = FMath::Abs(LowOffset.Z) / LowOffset.Z;
-
-		//HighOffset.X = math.Abs(HighOffset.X);
-		//HighOffset.Z = math.Abs(HighOffset.Z);
-		LowOffset = LowOffset.GetAbs();
-		MidOffset = MidOffset.GetAbs();
-		FinalOffset = FinalOffset.GetAbs(); //we convert to absolute number everything is +
-
-		float pitchX = (LowOffset.X - MidOffset.X) / 60; //-?
-		pitchXX = pitchX * normalizedEyeRotPitch; // -
-		pitchXX = FMath::Abs(pitchXX); // make sure result is +
-		float pitchZ = (LowOffset.Z - MidOffset.Z) / 60; //180 / -60 //-
-		pitchZZ = pitchZ * normalizedEyeRotPitch; // -
-		pitchZZ = FMath::Abs(pitchZZ); //make sure it is +
-
-		FinalOffset.X = FinalOffset.X + (pitchXX);
-		FinalOffset.X = FMath::Clamp(FinalOffset.X, LowOffset.X, MidOffset.X) * offsetX;//we have issue here what if the values will be positive ?
-		FinalOffset.Z = FinalOffset.Z + (pitchZZ);
-		if (LowOffset.Z > MidOffset.Z)//guess other offset adjustments also would need that.
-		{
-			FinalOffset.Z = FMath::Clamp(FinalOffset.Z, MidOffset.Z, LowOffset.Z) * offsetZ;
-		}
-		else
-		{
-			FinalOffset.Z = FMath::Clamp(FinalOffset.Z, LowOffset.Z, MidOffset.Z) * offsetZ;
-		}
-		FinalOffset.Y = LowOffset.Y;
-	} //looking down
-	else if (EyeRot.NormalizeAxis(EyeRot.Pitch) < 0.0f)
-	{
-		float offsetX = FMath::Abs(HighOffset.X) / HighOffset.X;
-		float offsetZ = FMath::Abs(HighOffset.Z) / HighOffset.Z;
-
-		//HighOffset.X = math.Abs(HighOffset.X);
-		//HighOffset.Z = math.Abs(HighOffset.Z);
-		HighOffset = HighOffset.GetAbs();
-		MidOffset = MidOffset.GetAbs();
-		FinalOffset = FinalOffset.GetAbs(); //we convert to absolute number everything is +
-
-		float pitchX = (HighOffset.X - MidOffset.X) / -60; //-?
-		pitchXX = pitchX * normalizedEyeRotPitch; // -
-		pitchXX = FMath::Abs(pitchXX); // make sure result is +
-		float pitchZ = (HighOffset.Z - MidOffset.Z) / -60; //180 / -60 //-
-		pitchZZ = pitchZ * normalizedEyeRotPitch; // -
-		pitchZZ = FMath::Abs(pitchZZ);
-
-		FinalOffset.X = FinalOffset.X + (pitchXX);
-		FinalOffset.X = FMath::Clamp(FinalOffset.X, MidOffset.X, HighOffset.X) * offsetX;//we have issue here what if the values will be positive ?
-		FinalOffset.Z = FinalOffset.Z + (pitchZZ);
-		FinalOffset.Z = FMath::Clamp(FinalOffset.Z, MidOffset.Z, HighOffset.Z) * offsetZ;
-		FinalOffset.Y = HighOffset.Y;
-	} //looking directly straight pitch = 0, dunno if that ever happen.
-	else
-	{
-		FinalOffset = MidOffset;
-	}
-
-	FinalPos = EyeLoc;
-	//FinalOffset = FinalOffset.SafeNormal();
-	FinalPos += FRotationMatrix(EyeRot).TransformVector(FinalOffset);
-	//FinalPos += FRotationMatrix(EyeRot).TransformPosition(FinalOffset);
-	OutResult.Location = FinalPos;
-	OutResult.Rotation = EyeRot;
-	OutResult.AspectRatio = 1.7777779;
-	OutResult.bConstrainAspectRatio = true;
-	/*OutVT.POV.Location = FinalPos;
-	OutVT.POV.Rotation = EyeRot;*/
+	//FinalPos = EyeLoc;
+	////FinalOffset = FinalOffset.SafeNormal();
+	//FinalPos += FRotationMatrix(EyeRot).TransformVector(FinalOffset);
+	////FinalPos += FRotationMatrix(EyeRot).TransformPosition(FinalOffset);
+	//OutResult.Location = FinalPos;
+	//OutResult.Rotation = EyeRot;
+	//OutResult.AspectRatio = 1.7777779;
+	//OutResult.bConstrainAspectRatio = true;
+	///*OutVT.POV.Location = FinalPos;
+	//OutVT.POV.Rotation = EyeRot;*/
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -176,6 +189,7 @@ void ARPGCharacter::SetupPlayerInputComponent(class UInputComponent* InputCompon
 	check(InputComponent);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	InputComponent->BindAction("ActionButtonOne", IE_Pressed, this, &ARPGCharacter::ActionButtonOne);
+	InputComponent->BindAction("ActionButtonOne", IE_Released, this, &ARPGCharacter::ActionButtonOneReleased);
 	InputComponent->BindAction("ActionButtonTwo", IE_Pressed, this, &ARPGCharacter::ActionButtonTwo);
 	InputComponent->BindAxis("MoveForward", this, &ARPGCharacter::MoveForward);
 	InputComponent->BindAxis("MoveRight", this, &ARPGCharacter::MoveRight);
@@ -203,7 +217,12 @@ void ARPGCharacter::PostLoad()
 void ARPGCharacter::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
-	DerivedAttributes.MaxHealth = ((BaseAttributes.Constitution - 10) / 2) * AttributeHelpers.HealthPerConstitution + AttributeHelpers.BaseHealth;
+
+}
+void ARPGCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	DerivedAttributes.MaxHealth = GetMaxHealth();
 	DerivedAttributes.Health = 0;
 }
 void ARPGCharacter::Tick(float DeltaSeconds)
@@ -255,7 +274,7 @@ void ARPGCharacter::MoveForward(float Value)
 		Rotation.Normalize();
 		FRotator YawRotation(0, Rotation.Yaw, 0);
 		//const FVector Direction = FRotationMatrix(Rotation).GetScaledAxis( EAxis::X );
-		const FVector Direction = FRotationMatrix(Rotation).GetUnitAxis(EAxis::X);
+		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		AddMovementInput(Direction, Value);
 	}
 }
@@ -318,8 +337,16 @@ void ARPGCharacter::SetHealth(float value)
 }
 float ARPGCharacter::GetMaxHealth()
 {
-	DerivedAttributes.MaxHealth = ((BaseAttributes.Constitution - 10) / 2) * AttributeHelpers.HealthPerConstitution;
-	return DerivedAttributes.MaxEnergy;
+	DerivedAttributes.MaxHealth = ((BaseAttributes.Constitution - 10) / 2) * AttributeHelpers.HealthPerConstitution + AttributeHelpers.BaseHealth;
+	return DerivedAttributes.MaxHealth;
+}
+void ARPGCharacter::SubtractMaxHealth(float amount)
+{
+	DerivedAttributes.MaxHealth = DerivedAttributes.MaxHealth - amount;
+}
+void ARPGCharacter::AddMaxHealth(float amount)
+{
+	DerivedAttributes.MaxHealth = DerivedAttributes.MaxHealth + amount;
 }
 float ARPGCharacter::GetCurrentEnergy()
 {
@@ -345,4 +372,9 @@ void ARPGCharacter::SubtractCurrentEndurance(float amount)
 void ARPGCharacter::SubtractCurrentHealth(float amount)
 {
 	DerivedAttributes.Health = DerivedAttributes.Health - amount;
+}
+
+void ARPGCharacter::SetWalkingSpeed()
+{
+	CharacterMovement->MaxWalkSpeed = 440.0f;
 }

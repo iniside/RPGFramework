@@ -11,3 +11,5 @@
 #include "ParticleDefinitions.h"
 #include "RPGClasses.h"
 #endif
+
+#define COLLISION_COMBO ECC_GameTraceChannel1
