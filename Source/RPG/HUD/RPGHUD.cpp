@@ -220,3 +220,8 @@ AActor* ARPGHUD::GetHUDHitActor()
 	}
 	return actor;
 }
+
+float ARPGHUD::GetTargetHealth()
+{
+	return 0;
+}

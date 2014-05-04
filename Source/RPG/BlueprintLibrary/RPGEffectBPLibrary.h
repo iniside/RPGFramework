@@ -12,7 +12,7 @@ class URPGEffectBPLibrary : public UBlueprintFunctionLibrary
 
 public:
 	UFUNCTION(BlueprintCallable, Category=PowerEffects)
-	static void ApplyEffect(ARPGCharacter* effectTarget, ARPGCharacter* causedBy, TSubclassOf<class URPGEffectBase> appiledEffect);
+	static void ApplyEffect(AActor* effectTarget, AActor* causedBy, TSubclassOf<class URPGEffectBase> appiledEffect);
 
 	UFUNCTION(BlueprintCallable, Category = PowerEffects)
 	static void ApplyEffectTest(ARPGCharacter* effectTarget, ARPGCharacter* causedBy, TSubclassOf<class URPGEffectBase> appiledEffect);

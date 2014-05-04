@@ -3,6 +3,7 @@
 #include "RPG.h"
 #include "../Common/RPGSharedEnums.h"
 #include "../Components/RPGEffectManagerComponent.h"
+#include "../Components/RPGAttributeComponent.h"
 #include "RPGEffectBase.h"
 
 
@@ -60,41 +61,43 @@ TStatId URPGEffectBase::GetStatId() const
 {
 	return this->GetStatID();
 }
-
-void URPGEffectBase::SetAttributeUpdates()
-{
-	TargetHealth = AffectedTarget->GetCurrentHealth();
-	//TargetHealthPrecentage = AffectedTarget->GetHealthPrecentage();
-	TargetEnergy = AffectedTarget->GetCurrentEnergy();
-	TargetEndurance = AffectedTarget->GetCurrentEndurance();
-
-	CauserHealth = CausedBy->GetCurrentHealth();
-	CauserEnergy = CausedBy->GetCurrentEnergy();
-	CauserEndurance = CausedBy->GetCurrentEndurance();
-}
-
-bool URPGEffectBase::CheckHealthTreshold(float threshold)
-{
-	return false;
-}
-
-void URPGEffectBase::AddEffect()
-{
-	//do not do anything.
-}
-void URPGEffectBase::Initialize()
+//change to to bool
+//so we can check if effect has been initialized properly
+bool URPGEffectBase::Initialize()
 {
 	IsEffectActive = false;
 	EffectsRemoved = 0;
-	if(AffectedTarget)
+	if (AffectedTarget)
 	{
-		if(GetWorld())
+		if (GetWorld())
 		{
-			//OnEffectAppiled_Implementation();
-			OnEffectAppiled();
-			IsEffectActive = true;
+			TArray<URPGAttributeComponent*> attributeComps;
+			AffectedTarget->GetComponents<URPGAttributeComponent>(attributeComps);
+			for (auto attrComp : attributeComps)
+			{
+				TargetAttributeComp = attrComp;
+				break;
+			}
+			
+			TArray<URPGEffectManagerComponent*> effectMngComps;
+			AffectedTarget->GetComponents<URPGEffectManagerComponent>(effectMngComps);
+			for (auto effectMngComp : effectMngComps)
+			{
+				TargetEffectMngComp = effectMngComp;
+				break;
+			}
+			if (TargetAttributeComp && TargetEffectMngComp)
+			{
+				//OnEffectAppiled_Implementation();
+				OnEffectAppiled();
+				IsEffectActive = true;
+				return true;
+			}
+			return false;
 		}
+		return false;
 	}
+	return false;
 }
 
 void URPGEffectBase::Deinitialize()
@@ -104,7 +107,40 @@ void URPGEffectBase::Deinitialize()
 	TickDuration = 0;
 	Duration = 0;
 	IsEffectActive = false;
+	TargetAttributeComp = NULL;
+	TargetEffectMngComp = NULL;
 }
+void URPGEffectBase::SetAttributeUpdates()
+{
+	TargetHealth = TargetAttributeComp->GetHealth();
+	//TargetHealthPrecentage = AffectedTarget->GetHealthPrecentage();
+	//TargetEnergy = AffectedTarget->GetCurrentEnergy();
+	//TargetEndurance = AffectedTarget->GetCurrentEndurance();
+
+	//CauserHealth = CausedBy->GetCurrentHealth();
+	//CauserEnergy = CausedBy->GetCurrentEnergy();
+	//CauserEndurance = CausedBy->GetCurrentEndurance();
+}
+
+bool URPGEffectBase::CheckHealthTresholdMaxHealth(float threshold)
+{
+	float healthPrecentage = TargetHealth / TargetAttributeComp->GetHealth() * 100.0f;
+	if (healthPrecentage > threshold)
+	{
+		return false;
+	}
+	else
+	{
+		true;
+	}
+	return false;
+}
+
+void URPGEffectBase::AddEffect()
+{
+	//do not do anything.
+}
+
 
 void URPGEffectBase::OnEffectAppiled_Implementation()
 {
@@ -143,16 +179,16 @@ void URPGEffectBase::DecreaseAttributeForTime(float DecreaseValue)
 {
 	if (AffectedTarget)
 	{
-		OriginalConstitution = AffectedTarget->BaseAttributes.Constitution;
+		//OriginalConstitution = AffectedTarget->BaseAttributes.Constitution;
 		AttributeDecrease = DecreaseValue;
-		AffectedTarget->BaseAttributes.Constitution -= DecreaseValue;
+		//AffectedTarget->BaseAttributes.Constitution -= DecreaseValue;
 	}
 }
 void URPGEffectBase::RestoreOriginalAttributes(float DecreasedValue)
 {
 	if (AffectedTarget)
 	{
-		AffectedTarget->BaseAttributes.Constitution += DecreasedValue;
+		//AffectedTarget->BaseAttributes.Constitution += DecreasedValue;
 	}
 }
 void URPGEffectBase::TemporarlyDrainHealth(float DrainAmount)
@@ -169,22 +205,37 @@ void URPGEffectBase::TemporarlyDrainMaxHealth(float DrainAmount)
 	if (AffectedTarget)
 	{
 		MaxHealthDrain = DrainAmount;
-		AffectedTarget->SubtractMaxHealth(DrainAmount);
+		//AffectedTarget->SubtractMaxHealth(DrainAmount);
 	}
 }
 void URPGEffectBase::RestoreOriginalMaxHealth(float HealthValue)
 {
 	if (AffectedTarget)
 	{
-		AffectedTarget->AddMaxHealth(HealthValue);
+		//AffectedTarget->AddMaxHealth(HealthValue);
 	}
 }
 
 uint8 URPGEffectBase::GetHexesFromTarget()
 {
-	return AffectedTarget->EffectManager->EffectsOnCharacter.Hexes;
+	return TargetEffectMngComp->GetHexes();
 }
-
+uint8 URPGEffectBase::GetCursesFromTarget()
+{
+	return TargetEffectMngComp->GetCurses();
+}
+uint8 URPGEffectBase::GetEnchantmentsFromTarget()
+{
+	return TargetEffectMngComp->GetEnchantments();
+}
+uint8 URPGEffectBase::GetConditionsFromTarget()
+{
+	return TargetEffectMngComp->GetConditions();
+}
+uint8 URPGEffectBase::GetBoonsFromTarget()
+{
+	return TargetEffectMngComp->GetBoons();
+}
 void URPGEffectBase::SelfRemoveEffect()
 {
 

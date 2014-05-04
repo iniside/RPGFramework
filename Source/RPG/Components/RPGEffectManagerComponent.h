@@ -46,6 +46,8 @@ public:
 	void DestroyCondition(class URPGConditionBase* condition);
 	//void RemoveEffectByType(TEnumAsByte<EEffectType> effectType);
 
+	//change it to private ?
+protected:
 	/*
 	 * Effects On Character
 	 */
@@ -65,7 +67,26 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = EffectsOnCharacter)
 	uint8 Boons;
+public:
+	uint8 GetHexes();
+	void SetHexes(uint8 amount);
+	void RemoveHexes(uint8 amount);
 
+	uint8 GetCurses();
+	void SetCurses(uint8 amount);
+	void RemoveCurses(uint8 amount);
+
+	uint8 GetEnchantments();
+	void SetEnchantments(uint8 amount);
+	void RemoveEnchantments(uint8 amount);
+
+	uint8 GetConditions();
+	void SetConditions(uint8 amount);
+	void RemoveConditions(uint8 amount);
+
+	uint8 GetBoons();
+	void SetBoons(uint8 amount);
+	void RemoveBoons(uint8 amount);
 private:
 	URPGEffectBase* NewEffect;
 	float tickTime;

@@ -102,13 +102,13 @@ public:
 	Target affected by appiled effect
 	*/
 	UPROPERTY(BlueprintReadWrite, Category=BaseProperties)
-	ARPGCharacter* AffectedTarget; //maybe change it to RPGCharacter ?
+	AActor* AffectedTarget; //maybe change it to RPGCharacter ?
 
 	/**
 	Who appiled effect to target.
 	*/
 	UPROPERTY(BlueprintReadWrite, Category=BaseProperties)
-	ARPGCharacter* CausedBy;
+	AActor* CausedBy;
 
 	UPROPERTY()
 	bool IsEffectAppiled;
@@ -121,11 +121,8 @@ public:
 	*/
 	virtual void AddEffect();
 	/** 
-	Initialize timers for effect:
-	Timer for calling remove
-	Timer for calling finish event, to allow end clean up.
 	*/
-	virtual void Initialize();
+	virtual bool Initialize();
 
 	/** 
 		Deinitialaize effect, effecticly setting it all ticking properties to 0 or false
@@ -178,7 +175,15 @@ public:
 		void TemporarlyDrainMaxHealth(float DrainAmount);
 
 	UFUNCTION(BlueprintCallable, Category = EffectHelpers)
-		uint8 GetHexesFromTarget();
+	uint8 GetHexesFromTarget();
+	UFUNCTION(BlueprintCallable, Category = EffectHelpers)
+	uint8 GetCursesFromTarget();
+	UFUNCTION(BlueprintCallable, Category = EffectHelpers)
+	uint8 GetEnchantmentsFromTarget();
+	UFUNCTION(BlueprintCallable, Category = EffectHelpers)
+	uint8 GetConditionsFromTarget();
+	UFUNCTION(BlueprintCallable, Category = EffectHelpers)
+	uint8 GetBoonsFromTarget();
 protected:
 	UPROPERTY(BlueprintReadOnly, Category=NativeProperties)
 	int32 EffectsRemoved; //effects removed by this effect used with RemoveSingleEffect. If only used once, usually will be 0 or 1, if RemoveSingleEffect with ticker, it might vary!
@@ -216,10 +221,13 @@ protected:
 	will be reached, otherwise it will return false;
 	*/
 	UFUNCTION(BlueprintCallable, Category=EffectHelpers)
-	bool CheckHealthTreshold(float threshold);
+	bool CheckHealthTresholdMaxHealth(float threshold);
 
 protected:
 	virtual void SelfRemoveEffect();
+
+	class URPGAttributeComponent* TargetAttributeComp;
+	class URPGEffectManagerComponent* TargetEffectMngComp;
 private:
 	float currentTickTime;
 	float currentDuration;

@@ -14,13 +14,12 @@ URPGEffectHex::URPGEffectHex(const class FPostConstructInitializeProperties& PCI
 void URPGEffectHex::AddEffect()
 {
 	Initialize();
-	AffectedTarget->EffectManager->AddEffect(this);
-	AffectedTarget->EffectManager->Hexes += 1;
-	//AffectedTarget->EffectsOnCharacter.Hexes += 1;
+	TargetEffectMngComp->AddEffect(this);
+	TargetEffectMngComp->SetHexes(1);
 }
 void URPGEffectHex::SelfRemoveEffect()
 {
 	Deinitialize();
-	AffectedTarget->EffectManager->Hexes -= 1;
-	AffectedTarget->EffectManager->RemoveEffect(this);
+	TargetEffectMngComp->RemoveHexes(1);
+	TargetEffectMngComp->RemoveEffect(this);
 }

@@ -11,9 +11,50 @@ URPGEquipmentManagerComponent::URPGEquipmentManagerComponent(const class FPostCo
 {
 	
 }
-void URPGEquipmentManagerComponent::SetCharacterStats(ARPGItem* item, ARPGCharacter* character)
+
+void URPGEquipmentManagerComponent::OnComponentCreated()
 {
-	if(item && character)
+	Super::OnComponentCreated();
+	EquipmentOwner = GetOwner();
+
+	if (EquipmentOwner)
+	{
+		TArray<URPGAttributeComponent*> attributeComps;
+		EquipmentOwner->GetComponents<URPGAttributeComponent>(attributeComps);
+		for (URPGAttributeComponent* attrComp : attributeComps)
+		{
+			attributeComp = attrComp;
+			break;
+		}
+
+		TArray<USkeletalMeshComponent*> skeletalMeshComps;
+		EquipmentOwner->GetComponents<USkeletalMeshComponent>(skeletalMeshComps);
+		for (USkeletalMeshComponent* skelComp : skeletalMeshComps)
+		{
+			if (skelComp->GetName() == "ChestMesh")
+			{
+				ChestSlotComp = skelComp;
+			}
+			if (skelComp->GetName() == "FootMesh")
+			{
+				FootSlotComp = skelComp;
+			}
+			if (skelComp->GetName() == "HeadMesh")
+			{
+				HeadSlotComp = skelComp;
+			}
+		}
+	}
+}
+
+void URPGEquipmentManagerComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+	EquipmentOwner = GetOwner();
+}
+void URPGEquipmentManagerComponent::SetCharacterStats(ARPGItem* item)
+{
+	if (item && attributeComp)
 	{
 		if(EquipedItems.Num() > 0)
 		{
@@ -23,8 +64,8 @@ void URPGEquipmentManagerComponent::SetCharacterStats(ARPGItem* item, ARPGCharac
 
 				if(item->Attributes.Constitution > EquipedItems[0]->Attributes.Constitution)
 				{
-					character->BaseAttributes.Constitution = character->BaseAttributes.Constitution - EquipedItems[0]->Attributes.Constitution;
-					character->BaseAttributes.Constitution = character->BaseAttributes.Constitution + item->Attributes.Constitution;
+					attributeComp->SubtractConstitution(EquipedItems[0]->Attributes.Constitution);
+					attributeComp->AddConstitution(item->Attributes.Constitution);
 				}						
 			}
 		}
@@ -32,15 +73,15 @@ void URPGEquipmentManagerComponent::SetCharacterStats(ARPGItem* item, ARPGCharac
 		{
 			if(item->Attributes.Constitution != 0) 
 			{
-				character->BaseAttributes.Constitution = character->BaseAttributes.Constitution + item->Attributes.Constitution;				
+				attributeComp->AddConstitution(item->Attributes.Constitution);
 			}
 		}
 	}
 }
 
-void URPGEquipmentManagerComponent::EquipChestItem(ARPGItem* item, ARPGCharacter* character)
+void URPGEquipmentManagerComponent::EquipChestItem(ARPGItem* item)
 {
-	if(item && character)
+	if (item && ChestSlotComp)
 	{
 		if(item->ItemType == EItemType::Item_Chest) //make sure item is of right type. Just in case. Could be removed later as this check is redundant
 		{
@@ -49,17 +90,17 @@ void URPGEquipmentManagerComponent::EquipChestItem(ARPGItem* item, ARPGCharacter
 					if(EquipedItems.Num() == 0) //if there is no item equiped
 					{
 						//we can just assign stats from item to the character
-						SetCharacterStats(item, character);
+						SetCharacterStats(item);
 						ChestSlot = item; //the assign item to the slot
-						character->ChestMesh->SetSkeletalMesh(item->ChestMesh);
+						ChestSlotComp->SetSkeletalMesh(item->ChestMesh);
 						EquipedItems.AddUnique(ChestSlot); //and add to array
 						return;
 					}
 					else //otherwise
 					{
-						SetCharacterStats(item, character); //we check if the current item have higher stat that current equiped
+						SetCharacterStats(item); //we check if the current item have higher stat that current equiped
 						ChestSlot = item; //we just assign our item to the slot
-						character->ChestMesh->SetSkeletalMesh(item->ChestMesh);
+						ChestSlotComp->SetSkeletalMesh(item->ChestMesh);
 						EquipedItems.AddUnique(ChestSlot); //and add to array
 					}
 			}
@@ -67,10 +108,10 @@ void URPGEquipmentManagerComponent::EquipChestItem(ARPGItem* item, ARPGCharacter
 			{
 				if(EquipedItems.Num() > 0) //so we assume that array  contain more than 0 elements
 				{
-					SetCharacterStats(item, character); //check if the current item have better stat than old ones
+					SetCharacterStats(item); //check if the current item have better stat than old ones
 					EquipedItems.RemoveSingle(ChestSlot); //remove our old item from array
 					ChestSlot = item; //asign new item
-					character->ChestMesh->SetSkeletalMesh(item->ChestMesh);
+					ChestSlotComp->SetSkeletalMesh(item->ChestMesh);
 					EquipedItems.AddUnique(ChestSlot); //and add it to array
 				}
 			}
@@ -78,9 +119,9 @@ void URPGEquipmentManagerComponent::EquipChestItem(ARPGItem* item, ARPGCharacter
 	}
 }
 
-void URPGEquipmentManagerComponent::EquipFootItem(ARPGItem* item, ARPGCharacter* character)
+void URPGEquipmentManagerComponent::EquipFootItem(ARPGItem* item)
 {
-	if(item && character)
+	if (item && FootSlotComp)
 	{
 		if(item->ItemType == EItemType::Item_Foot) //make sure item is of right type. Just in case. Could be removed later as this check is redundant
 		{
@@ -89,14 +130,14 @@ void URPGEquipmentManagerComponent::EquipFootItem(ARPGItem* item, ARPGCharacter*
 					if(EquipedItems.Num() == 0) //if there is no item equiped
 					{
 						//we can just assign stats from item to the character
-						SetCharacterStats(item, character);
+						SetCharacterStats(item);
 						FootSlot = item; //the assign item to the slot
 						EquipedItems.AddUnique(FootSlot); //and add to array
 						return;
 					}
 					else //otherwise
 					{
-						SetCharacterStats(item, character); //we check if the current item have higher stat that current equiped
+						SetCharacterStats(item); //we check if the current item have higher stat that current equiped
 						FootSlot = item; //we just assign our item to the slot
 						EquipedItems.AddUnique(FootSlot); //and add to array
 					}
@@ -105,7 +146,7 @@ void URPGEquipmentManagerComponent::EquipFootItem(ARPGItem* item, ARPGCharacter*
 			{
 				if(EquipedItems.Num() > 0) //so we assume that array  contain more than 0 elements
 				{
-					SetCharacterStats(item, character); //check if the current item have better stat than old ones
+					SetCharacterStats(item); //check if the current item have better stat than old ones
 					EquipedItems.RemoveSingle(FootSlot); //remove our old item from array
 					FootSlot = item; //asign new item
 					EquipedItems.AddUnique(FootSlot); //and add it to array
@@ -115,14 +156,14 @@ void URPGEquipmentManagerComponent::EquipFootItem(ARPGItem* item, ARPGCharacter*
 	}
 }
 
-void URPGEquipmentManagerComponent::EquipItem(TSubclassOf<class ARPGItem> item, ARPGCharacter* character)
+void URPGEquipmentManagerComponent::EquipItem(TSubclassOf<class ARPGItem> item)
 {
 	if(item)
 	{
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.bNoCollisionFail = true;
 		ARPGItem* itemBase = GetWorld()->SpawnActor<ARPGItem>(item, SpawnInfo);
-		itemBase->ItemOwner = character; //we assign current character as owner to item, it might be better to use GetOwner()! as item is either eequiped on character or not.
+		itemBase->ItemOwner = NULL; //we assign current character as owner to item, it might be better to use GetOwner()! as item is either eequiped on character or not.
 		itemBase->InitializeItem();
 
 		//note this currently assume that stats NEVER stack
@@ -130,22 +171,22 @@ void URPGEquipmentManagerComponent::EquipItem(TSubclassOf<class ARPGItem> item, 
 		//note add UnEquipItem method to handle stat subtraction!
 		if(itemBase->ItemType == EItemType::Item_Chest)
 		{
-			EquipChestItem(itemBase, character);
+			EquipChestItem(itemBase);
 		}
 		if(itemBase->ItemType == EItemType::Item_Foot)
 		{
-			EquipFootItem(itemBase, character);
+			EquipFootItem(itemBase);
 		}
 	}
 }
 
-void URPGEquipmentManagerComponent::UnEquipItem(ARPGItem* item, ARPGCharacter* character)
+void URPGEquipmentManagerComponent::UnEquipItem(ARPGItem* item)
 {
-	if(item)
+	if (item && attributeComp)
 	{
 		if(item->Attributes.Constitution != 0)
 		{
-			character->BaseAttributes.Constitution = character->BaseAttributes.Constitution - item->Attributes.Constitution;
+			attributeComp->SubtractConstitution(item->Attributes.Constitution);
 			if(EquipedItems.Num() > 0)
 			{
 				for(ARPGItem* itemInArray : EquipedItems)
@@ -158,7 +199,7 @@ void URPGEquipmentManagerComponent::UnEquipItem(ARPGItem* item, ARPGCharacter* c
 	}
 }
 
-void URPGEquipmentManagerComponent::EquipWeapon(TSubclassOf<class ARPGWeaponBase> weapon, ARPGCharacter* characterToAttach, FName SocketName)
+void URPGEquipmentManagerComponent::EquipWeapon(TSubclassOf<class ARPGWeaponBase> weapon, FName SocketName, TEnumAsByte<EItemSlot> itemSlot)
 {
 	if(weapon)
 	{
@@ -166,12 +207,33 @@ void URPGEquipmentManagerComponent::EquipWeapon(TSubclassOf<class ARPGWeaponBase
 		SpawnInfo.bNoCollisionFail = true;
 		ARPGWeaponBase* weaponBase = GetWorld()->SpawnActor<ARPGWeaponBase>(weapon, SpawnInfo);
 		MainWeapon = weaponBase;
-		USkeletalMeshComponent* PawnMesh = characterToAttach->Mesh;
-		USkeletalMeshComponent* weaponMesh = MainWeapon->WeaponMesh;
-		//		USkeletalMesh* weaponMesh = MainWeapon->WeaponMesh;
-		//characterToAttach->SomeMesh->SetSkeletalMesh(weaponMesh);
-		weaponMesh->AttachTo(PawnMesh, SocketName);
-		weaponMesh->SetHiddenInGame(false);
+		switch (itemSlot)
+		{
+			case EItemSlot::ChestSlot:
+			{
+				//USkeletalMeshComponent* PawnMesh = characterToAttach->Mesh;
+				USkeletalMeshComponent* weaponMesh = MainWeapon->WeaponMesh;
+				//		USkeletalMesh* weaponMesh = MainWeapon->WeaponMesh;
+				//characterToAttach->SomeMesh->SetSkeletalMesh(weaponMesh);
+				weaponMesh->AttachTo(ChestSlotComp, SocketName);
+				weaponMesh->SetHiddenInGame(false);
+				break;
+			}
+			case EItemSlot::HeadSlot:
+			{
+				//USkeletalMeshComponent* PawnMesh = characterToAttach->Mesh;
+				USkeletalMeshComponent* weaponMesh = MainWeapon->WeaponMesh;
+				//		USkeletalMesh* weaponMesh = MainWeapon->WeaponMesh;
+				//characterToAttach->SomeMesh->SetSkeletalMesh(weaponMesh);
+				weaponMesh->AttachTo(HeadSlotComp, SocketName);
+				weaponMesh->SetHiddenInGame(false);
+				break;
+			}
+			default:
+				break;
+		}
+		
+
 	}
 }
 

@@ -50,5 +50,5 @@ class URPGDamageType : public UDamageType
 	GENERATED_UCLASS_BODY()
 
 	UFUNCTION()
-	virtual float DealDamage(class ARPGCharacter* target, class ARPGCharacter* causer, float damageAmount);
+	virtual float DealDamage(class URPGAttributeComponent* target, class ARPGCharacter* causer, float damageAmount);
 };

@@ -30,15 +30,22 @@ protected:
 	void BuildHotbarWidget();
 	void BuildPowerInventoryWidget();
 	void BuildFloatingCombatTextWidget();
-	UFUNCTION(BlueprintCallable, Category=HUDHelpers)
-	AActor* GetHUDHitActor();
+
 	TSharedPtr<class SRPGHotbarWidget> HotBarWidget;
 	TSharedPtr<class SFloatingCombatTextWidget> FloatingCombatTextWidget;
+
+	UFUNCTION(BlueprintCallable, Category = HUDHelpers)
+	AActor* GetHUDHitActor();
+	UFUNCTION(BlueprintCallable, Category = "RPGHUD|Helpers")
+	float GetTargetHealth();
+
+
 private:
 	FVector GetStartLocation(const FVector& AimDir) const;
 	FVector GetCameraAim() const;
 	FHitResult HUDHitResult(const FVector& StartTrace, const FVector& EndTrace) const;
-
+	
+	class URPGAttributeComponent* TargetAttributeComponent;
 
 	UTexture2D* CrosshairTex;
 };

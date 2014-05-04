@@ -7,6 +7,17 @@
 #include "../Items/RPGItem.h"
 #include "RPGEquipmentManagerComponent.generated.h"
 
+UENUM()
+enum EItemSlot 
+{
+	ChestSlot,
+	HeadSlot,
+	LegSlot,
+	FootSlot,
+	HandSlot,
+	ShoulderSlot
+};
+
 /**
  * 
  */
@@ -16,6 +27,11 @@ class URPGEquipmentManagerComponent : public UActorComponent
 	GENERATED_UCLASS_BODY()
 
 public:
+
+	virtual void OnComponentCreated() OVERRIDE;
+
+	virtual void InitializeComponent() OVERRIDE;
+
 	UPROPERTY()
 	class ARPGWeaponBase* MainWeapon;
 	UPROPERTY()
@@ -49,22 +65,32 @@ public:
 	UPROPERTY()
 	ARPGItem* ShouldersSlot;
 
+	
+
 	UPROPERTY()
 	TArray<ARPGItem*> EquipedItems;
 
 	UFUNCTION(BlueprintCallable, Category=CharacterEquipment)
-	void EquipItem(TSubclassOf<class ARPGItem> item, ARPGCharacter* character);
+	void EquipItem(TSubclassOf<class ARPGItem> item);
 
 	UFUNCTION(BlueprintCallable, Category=CharacterEquipment)
-	void UnEquipItem(ARPGItem* item, ARPGCharacter* character);
+	void UnEquipItem(ARPGItem* item);
 
 	UFUNCTION(BlueprintCallable, Category=CharacterEquipment)
-	void EquipWeapon(TSubclassOf<class ARPGWeaponBase> weapon, ARPGCharacter* characterToAttach, FName SocketName);
+		void EquipWeapon(TSubclassOf<class ARPGWeaponBase> weapon, FName SocketName, TEnumAsByte<EItemSlot> itemSlot);
 
 private:
-	void SetCharacterStats(ARPGItem* item, ARPGCharacter* character);
-	void EquipChestItem(ARPGItem* item, ARPGCharacter* character);
-	void EquipFootItem(ARPGItem* item, ARPGCharacter* character);
+	void SetCharacterStats(ARPGItem* item);
+	void EquipChestItem(ARPGItem* item);
+	void EquipFootItem(ARPGItem* item);
+	
+	uint8 EquipedItemsCount;
+	AActor* EquipmentOwner;
+
+	class URPGAttributeComponent* attributeComp;
+	class USkeletalMeshComponent* ChestSlotComp;
+	class USkeletalMeshComponent* FootSlotComp;
+	class USkeletalMeshComponent* HeadSlotComp;
 	inline static bool ConstPredicate (const ARPGItem& ip1, const ARPGItem& ip2) 
 	{
 		return (ip1.Attributes.Constitution > ip2.Attributes.Constitution);

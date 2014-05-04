@@ -11,6 +11,12 @@
 //class URPGPowerBase;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterCast);
 
+/*
+ Health system needs refactoring. Current version is way to specific.
+ It needs to be up in the inheritance tree, and each class down the line
+ should implement health calculation on it's own.
+ Some actors doesn't have any meaningfull attributes, just health.
+ */
 UCLASS(config=Game)
 class ARPGCharacter : public ACharacter
 {
@@ -34,6 +40,16 @@ private:
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterItems)
 		TSubobjectPtr<class USkeletalMeshComponent> ChestMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterItems)
+		TSubobjectPtr<class USkeletalMeshComponent> HeadMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterItems)
+		TSubobjectPtr<class USkeletalMeshComponent> LegMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterItems)
+		TSubobjectPtr<class USkeletalMeshComponent> FootMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterItems)
+		TSubobjectPtr<class USkeletalMeshComponent> HandsMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterItems)
+		TSubobjectPtr<class USkeletalMeshComponent> ShouldersMesh;
 
 	//Manager Components
 public:
@@ -52,6 +68,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Componenets)
 		TSubobjectPtr<class URPGEffectManagerComponent> EffectManager;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Componenets)
+		TSubobjectPtr<class URPGAttributeComponent> Attributes;
 	//Action Buttons
 public:
 	UFUNCTION()

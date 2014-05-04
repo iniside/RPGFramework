@@ -12,16 +12,30 @@ URPGEffectBPLibrary::URPGEffectBPLibrary(const class FPostConstructInitializePro
 }
 
 
-void URPGEffectBPLibrary::ApplyEffect(ARPGCharacter* effectTarget, ARPGCharacter* causedBy, TSubclassOf<class URPGEffectBase> appiledEffect)
+void URPGEffectBPLibrary::ApplyEffect(AActor* effectTarget, AActor* causedBy, TSubclassOf<class URPGEffectBase> appiledEffect)
 {
 	if(effectTarget)
 	{
 		if(appiledEffect)
 		{
-			URPGEffectBase* effect = ConstructObject<URPGEffectBase>(appiledEffect);
-			effect->AffectedTarget = effectTarget;
-			effect->CausedBy = causedBy;
-			effectTarget->EffectManager->AddEffect(effect);
+
+			TArray<URPGEffectManagerComponent*> effectMngComps;
+			URPGEffectManagerComponent* effectMngrComp = NULL;
+			effectTarget->GetComponents<URPGEffectManagerComponent>(effectMngComps);
+			for (auto effectMngComp : effectMngComps)
+			{
+				effectMngrComp = effectMngComp;
+				break;
+			}
+
+			if (effectMngrComp)
+			{
+				URPGEffectBase* effect = ConstructObject<URPGEffectBase>(appiledEffect);
+				effect->AffectedTarget = effectTarget;
+				effect->CausedBy = causedBy;
+				effectMngrComp->AddEffect(effect);
+			}
+			
 		}
 	}
 }
@@ -57,33 +71,33 @@ void URPGEffectBPLibrary::ApplyBleedCondition(ARPGCharacter* conditionTarget, AR
 }
 void URPGEffectBPLibrary::RemoveSingleEffect(AActor* effectTarget, AActor* causedBy, URPGEffectBase* effectToRemove, TEnumAsByte<EEffectType> effectTypeToRemove, TEnumAsByte<EEffectType> appiledEffectType)
 {
-	ARPGCharacter* GC = Cast<ARPGCharacter>(effectTarget);
-	if(GC)
-	{
-		if(effectToRemove->EffectType == appiledEffectType)
-		{
-			GC->EffectManager->RemoveEffect(effectToRemove);
-		}
-	}
+	//ARPGCharacter* GC = Cast<ARPGCharacter>(effectTarget);
+	//if(GC)
+	//{
+	//	if(effectToRemove->EffectType == appiledEffectType)
+	//	{
+	//		GC->EffectManager->RemoveEffect(effectToRemove);
+	//	}
+	//}
 }
 
 void URPGEffectBPLibrary::RemoveEffects(AActor* effectTarget, TEnumAsByte<EEffectType> appiledEffectType)
 {
-	ARPGCharacter* TargetPawn = Cast<ARPGCharacter>(effectTarget);
-	if(TargetPawn)
-	{
-		if(TargetPawn->EffectManager->EffectsList.Num() > 0)
-		{
-			for(URPGEffectBase* effect : TargetPawn->EffectManager->EffectsList)
-			{
-				if(effect->EffectType == appiledEffectType)
-				{
-					TargetPawn->EffectManager->RemoveEffect(effect);
-					GLogConsole->Log(FString::FormatAsNumber(GDeltaTime)); //just for debugging don't forget to remove it.
-				}
-			}
-		}
-	}
+	//ARPGCharacter* TargetPawn = Cast<ARPGCharacter>(effectTarget);
+	//if(TargetPawn)
+	//{
+	//	if(TargetPawn->EffectManager->EffectsList.Num() > 0)
+	//	{
+	//		for(URPGEffectBase* effect : TargetPawn->EffectManager->EffectsList)
+	//		{
+	//			if(effect->EffectType == appiledEffectType)
+	//			{
+	//				TargetPawn->EffectManager->RemoveEffect(effect);
+	//				GLogConsole->Log(FString::FormatAsNumber(GDeltaTime)); //just for debugging don't forget to remove it.
+	//			}
+	//		}
+	//	}
+	//}
 }
 
 void URPGEffectBPLibrary::MultiRadialHitCheck(FHitResult hitData, float radius, TArray<struct FHitResult>& OutHitsResult)
@@ -119,24 +133,25 @@ void URPGEffectBPLibrary::MultiRadialHitCheck(FHitResult hitData, float radius, 
 
 int32 URPGEffectBPLibrary::RemovesEffectStatic(AActor* targetToRemoveEffect, TEnumAsByte<EEffectType> appiledEffectType)
 {
-	int32 effectCount = 0;
-	ARPGCharacter* TargetPawn = Cast<ARPGCharacter>(targetToRemoveEffect);
-	int32 arrayNum = TargetPawn->EffectManager->EffectsList.Num(); //just checkin remove it!
-	if(TargetPawn)
-	{
-		//use iterator. Array will dynamically change, as elements are removed in this loop (!!).
-		//They are also removed outside of loop, when they expire.
-		//Iterator will take care for it, for us.
-		for(auto it = TargetPawn->EffectManager->EffectsList.CreateIterator(); it; ++it)
-		{
-			URPGEffectBase* effect  = TargetPawn->EffectManager->EffectsList[it.GetIndex()];
-			if(effect->EffectType == appiledEffectType)
-			{
-				TargetPawn->EffectManager->RemoveEffect(effect); 
-				effectCount++;
-			}
-		}
-		return effectCount;
-	}
-	return effectCount;
+	//int32 effectCount = 0;
+	//ARPGCharacter* TargetPawn = Cast<ARPGCharacter>(targetToRemoveEffect);
+	//int32 arrayNum = TargetPawn->EffectManager->EffectsList.Num(); //just checkin remove it!
+	//if(TargetPawn)
+	//{
+	//	//use iterator. Array will dynamically change, as elements are removed in this loop (!!).
+	//	//They are also removed outside of loop, when they expire.
+	//	//Iterator will take care for it, for us.
+	//	for(auto it = TargetPawn->EffectManager->EffectsList.CreateIterator(); it; ++it)
+	//	{
+	//		URPGEffectBase* effect  = TargetPawn->EffectManager->EffectsList[it.GetIndex()];
+	//		if(effect->EffectType == appiledEffectType)
+	//		{
+	//			TargetPawn->EffectManager->RemoveEffect(effect); 
+	//			effectCount++;
+	//		}
+	//	}
+	//	return effectCount;
+	//}
+	//return effectCount;
+	return 0;
 }

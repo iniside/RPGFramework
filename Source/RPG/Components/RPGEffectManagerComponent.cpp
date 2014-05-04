@@ -35,7 +35,7 @@ void URPGEffectManagerComponent::AddEffect(class URPGEffectBase* newEffect)
 				if (EffectsList[element]->DurationStackable == true)
 				{
 					//we simply get duration of current effect on array
-					//and new duration to total pool.
+					//and add new duration to total pool.
 					EffectsList[element]->Duration += newEffect->Duration;
 					return;
 				}
@@ -52,37 +52,17 @@ void URPGEffectManagerComponent::AddEffect(class URPGEffectBase* newEffect)
 				EffectsList.Add(newEffect);
 			}
 		}
-		
-		EffectsList.Add(newEffect);
+		bool success = newEffect->Initialize();
+		if (success)
+		{
+			EffectsList.Add(newEffect);
+		}
 
 }
 void URPGEffectManagerComponent::RemoveEffect(class URPGEffectBase* effectToRemove)
 {	
 	if(effectToRemove)	
 	{
-		ARPGCharacter* MyPawn = Cast<ARPGCharacter>(effectToRemove->AffectedTarget);
-						
-		switch (effectToRemove->EffectType)			
-		{				
-			case EEffectType::Effect_Boon:					
-				MyPawn->EffectsOnCharacter.Boons = MyPawn->EffectsOnCharacter.Boons - 1;					
-				break;				
-			case EEffectType::Effect_Condition:					
-				MyPawn->EffectsOnCharacter.Conditions = MyPawn->EffectsOnCharacter.Conditions - 1;					
-				break;				
-			case EEffectType::Effect_Curse:					
-				MyPawn->EffectsOnCharacter.Curses = MyPawn->EffectsOnCharacter.Curses - 1;					
-				break;				
-			case EEffectType::Effect_Enchantment:					
-				MyPawn->EffectsOnCharacter.Enchantments = MyPawn->EffectsOnCharacter.Enchantments - 1;					
-				break;				
-			case EEffectType::Effect_Hex:					
-				MyPawn->EffectsOnCharacter.Hexes = MyPawn->EffectsOnCharacter.Hexes - 1;					
-				break;				
-			default:					
-				break;
-		}
-
 		effectToRemove->Deinitialize(); //deinitialize effect so it no longer ticks		
 		int32 element = EffectsList.Find(effectToRemove);		
 		DestroyEffect(EffectsList[element]);		
@@ -132,6 +112,70 @@ void URPGEffectManagerComponent::DestroyCondition(class URPGConditionBase* condi
 	GetWorld()->ForceGarbageCollection(true);
 }
 
+uint8 URPGEffectManagerComponent::GetHexes()
+{
+	return Hexes;
+}
+void URPGEffectManagerComponent::SetHexes(uint8 amount)
+{
+	Hexes += amount;
+}
+void URPGEffectManagerComponent::RemoveHexes(uint8 amount)
+{
+	Hexes -= amount;
+}
+
+uint8 URPGEffectManagerComponent::GetCurses()
+{
+	return Curses;
+}
+void URPGEffectManagerComponent::SetCurses(uint8 amount)
+{
+	Curses += amount;
+}
+void URPGEffectManagerComponent::RemoveCurses(uint8 amount)
+{
+	Curses -= amount;
+}
+
+uint8 URPGEffectManagerComponent::GetEnchantments()
+{
+	return Enchantments;
+}
+void URPGEffectManagerComponent::SetEnchantments(uint8 amount)
+{
+	Enchantments += amount;
+}
+void URPGEffectManagerComponent::RemoveEnchantments(uint8 amount)
+{
+	Enchantments -= amount;
+}
+
+uint8 URPGEffectManagerComponent::GetConditions()
+{
+	return Conditions;
+}
+void URPGEffectManagerComponent::SetConditions(uint8 amount)
+{
+	Conditions += amount;
+}
+void URPGEffectManagerComponent::RemoveConditions(uint8 amount)
+{
+	Conditions -= amount;
+}
+
+uint8 URPGEffectManagerComponent::GetBoons()
+{
+	return Boons;
+}
+void URPGEffectManagerComponent::SetBoons(uint8 amount)
+{
+	Boons += amount;
+}
+void URPGEffectManagerComponent::RemoveBoons(uint8 amount)
+{
+	Boons -= amount;
+}
 void URPGEffectManagerComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {	
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);		

@@ -11,4 +11,22 @@ class URPGPowerCastCharged : public URPGPowerBase
 {
 	GENERATED_UCLASS_BODY()
 
+	void Tick(float DeltaTime) OVERRIDE;
+
+	UPROPERTY(EditAnywhere, Category = BaseProperties)
+	float CastTime;
+	UPROPERTY(EditAnywhere, Category = BaseProperties)
+	float MaxTimeOverchargeTime;
+	UPROPERTY(EditAnywhere, Category = BaseProperties)
+	bool UseOvercharge;
+
+	void OnCastStart() OVERRIDE;
+	void OnCastStop() OVERRIDE;
+
+protected:
+	void CastPower();
+private:
+	bool isCharged;
+	float currentChargeTime;
+	float GetCurrentChargeTime();
 };

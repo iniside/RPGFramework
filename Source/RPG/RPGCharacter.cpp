@@ -5,6 +5,7 @@
 #include "Components/RPGEquipmentManagerComponent.h"
 #include "Components/RPGPowerManagerComponent.h"
 #include "Components/RPGEffectManagerComponent.h"
+#include "Components/RPGAttributeComponent.h"
 #include "RPGCharacter.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -33,10 +34,34 @@ ARPGCharacter::ARPGCharacter(const class FPostConstructInitializeProperties& PCI
 	//BaseTurnRate = 45.f;
 	//BaseLookUpRate = 45.f;
 	PrimaryActorTick.bCanEverTick = true;
+	
+	/*
+		Items slots.
+	*/
+	EquipmentManager = PCIP.CreateDefaultSubobject<URPGEquipmentManagerComponent>(this, TEXT("EquipmentManager"));
 	ChestMesh = PCIP.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("ChestMesh"));
 	ChestMesh->AttachParent = Mesh;
-
-	EquipmentManager = PCIP.CreateDefaultSubobject<URPGEquipmentManagerComponent>(this, TEXT("EquipmentManager"));
+	ChestMesh->SetMasterPoseComponent(Mesh);
+	
+	HeadMesh = PCIP.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("HeadMesh"));
+	HeadMesh->AttachParent = Mesh;
+	HeadMesh->SetMasterPoseComponent(Mesh);
+	
+	LegMesh = PCIP.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LegMesh"));
+	LegMesh->AttachParent = Mesh;
+	LegMesh->SetMasterPoseComponent(Mesh);
+	
+	FootMesh = PCIP.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("FootMesh"));
+	FootMesh->AttachParent = Mesh;
+	FootMesh->SetMasterPoseComponent(Mesh);
+	
+	HandsMesh = PCIP.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("HandsMesh"));
+	HandsMesh->AttachParent = Mesh;
+	HandsMesh->SetMasterPoseComponent(Mesh);
+	
+	ShouldersMesh = PCIP.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("ShouldersMesh"));
+	ShouldersMesh->AttachParent = Mesh;
+	ShouldersMesh->SetMasterPoseComponent(Mesh);
 	
 	PowerManager = PCIP.CreateDefaultSubobject<URPGPowerManagerComponent>(this, TEXT("PowerManager"));
 	PowerManager->bAutoActivate = true;
@@ -44,6 +69,12 @@ ARPGCharacter::ARPGCharacter(const class FPostConstructInitializeProperties& PCI
 	EffectManager->bAutoActivate = true;
 	EffectManager->Activate();
 	EffectManager->bAllowConcurrentTick = true;
+
+	Attributes = PCIP.CreateDefaultSubobject<URPGAttributeComponent>(this, TEXT("Attributes"));
+	Attributes->bAutoActivate = true;
+	Attributes->Activate();
+	Attributes->SetHealth(100);
+
 	// Configure character movement
 	CharacterMovement->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	
@@ -222,6 +253,7 @@ void ARPGCharacter::OnConstruction(const FTransform& Transform)
 void ARPGCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	Attributes->SetMaxHealth();
 	DerivedAttributes.MaxHealth = GetMaxHealth();
 	DerivedAttributes.Health = 0;
 }

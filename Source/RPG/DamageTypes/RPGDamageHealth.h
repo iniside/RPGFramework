@@ -8,5 +8,5 @@ class URPGDamageHealth : public URPGDamageType
 	GENERATED_UCLASS_BODY()
 
 	
-	virtual float DealDamage(class ARPGCharacter* target, class ARPGCharacter* causer, float damageAmount) OVERRIDE;
+	virtual float DealDamage(class URPGAttributeComponent* target, class ARPGCharacter* causer, float damageAmount) OVERRIDE;
 };

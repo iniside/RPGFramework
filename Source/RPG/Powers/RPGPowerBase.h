@@ -187,7 +187,11 @@ protected:
 	and projectile behaviour might change it further.
 	*/
 	UFUNCTION(BlueprintCallable, Category=PowerHelpers)
-	void SpawnProjectileAtLocationRadius(TSubclassOf<class ARPGProjectile> Projectile, FHitResult Impact, float Radius, int32 ProjectileNumber);
+		void SpawnProjectileAtLocationRadius(TSubclassOf<class ARPGProjectile> Projectile, FHitResult Impact, float Radius, float StartHeight, int32 ProjectileNumber);
+
+
+	UFUNCTION(BlueprintCallable, Category = PowerHelpers)
+		void SpawnEffectActorAtLocation(TSubclassOf<class ARPGEffectActor> effectActor, FHitResult HitLocation, float Height);
 
 	/**
 	targetToRemoveEffect - actor from which we will remove effect

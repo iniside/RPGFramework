@@ -10,6 +10,7 @@
 #include "../Components/RPGEquipmentManagerComponent.h"
 #include "../Components/RPGEffectManagerComponent.h"
 #include "../Effects/RPGEffectBase.h"
+#include "../Effects/EffectActors/RPGProjectileSpawner.h"
 #include "RPGPowerBase.h"
 
 
@@ -23,35 +24,6 @@ URPGPowerBase::URPGPowerBase(const class FPostConstructInitializeProperties& PCI
 void URPGPowerBase::Tick( float DeltaTime)
 {
 	OnPowerTick();
-	
-	
-	////recharge system works! now pass data to ui ;/
-	//if(PowerState.IsOnCooldown)
-	//{
-	//	currentRechargeTime += DeltaTime;
-	//	if(currentRechargeTime >= RechargeTime)
-	//	{
-	//		PowerState.IsOnCooldown = false;
-	//		currentRechargeTime = 0;
-	//	}
-	//}
-	//if(PowerState.IsCasting)
-	//{
-	//	currentCastTime += DeltaTime;
-	//	if(currentCastTime >= CastingTime)
-	//	{
-	//		PowerState.IsCasting = false;
-	//		PowerState.IsCasted = true;
-	//		CastPower();
-	//		currentCastTime = 0;
-	//	}
-	//}
-
-	//if (PowerState.IsChanneled)
-	//{
-
-	//}
-
 }
 
 //this should not return true by defaul.
@@ -381,12 +353,6 @@ void URPGPowerBase::SpawnProjectile(TSubclassOf<class ARPGProjectile> Projectile
 			ShootDir = AdjustedDir;
 		}
 	}
-	//const FVector AdjustedDir = (target.ImpactPoint - Origin).SafeNormal();
-	//FVector AdjustedDir;
-	//if(Impact.GetActor())
-	//{
-	//	FVector AdjustedDir = (Impact.ImpactPoint - Origin).SafeNormal();
-	//}
 
 	FTransform SpawnTM(ShootDir.Rotation(), Origin);
 	ARPGProjectile* proj = Cast<ARPGProjectile>(UGameplayStatics::BeginSpawningActorFromClass(PowerOwner, Projectile, SpawnTM));
@@ -399,73 +365,84 @@ void URPGPowerBase::SpawnProjectile(TSubclassOf<class ARPGProjectile> Projectile
 		UGameplayStatics::FinishSpawningActor(proj, SpawnTM);
 	}
 
-	//if(Projectile)
+}
+
+void URPGPowerBase::SpawnProjectileAtLocationRadius(TSubclassOf<class ARPGProjectile> Projectile, FHitResult Impact, float Radius, float StartHeight, int32 ProjectileNumber)
+{
+	//if(Impact.GetActor())
 	//{
-	//	FVector Origin = GetCastingLocation();
-	//	FVector ShootDir = GetCameraAim();
-	//	FActorSpawnParameters SpawnParams;
-	//	SpawnParams.Owner = PowerOwner;
-	//	SpawnParams.Instigator = PowerOwner;
-	//	ARPGProjectile* proj = GetCurrentWorld()->SpawnActor<ARPGProjectile>(Projectile, Origin, Origin.Rotation(), SpawnParams);
-	//	if(proj)
+	//	
+	//	DrawDebugSphere(GetWorld(), Impact.ImpactPoint, Radius, 32, FColor::Yellow, false, 10.0f);
+	//	for(int32 i = 0; i < ProjectileNumber; i++)
 	//	{
-	//		FVector initVel = ShootDir;
-	//		proj->InitVelocity(AdjustedDir);
+	//		FVector ImpactVector = FVector::ZeroVector;
+	//		FVector StartVector;
+	//		/*Impact.ImpactPoint.Z = Impact.ImpactPoint.Z + 800.0f;
+	//		Impact.ImpactPoint.X = FMath::Clamp(Impact.ImpactPoint.X + FMath::RandRange(-Radius, Radius), (Impact.ImpactPoint.X - Radius), (Impact.ImpactPoint.X + Radius)); 
+	//		Impact.ImpactPoint.Y = FMath::Clamp(Impact.ImpactPoint.Y + FMath::RandRange(-Radius, Radius), (Impact.ImpactPoint.Y - Radius), (Impact.ImpactPoint.Y + Radius));*/
+	//		
+	//		StartVector.Z = Impact.ImpactPoint.Z+StartHeight;
+	//		//StartVector.X = Impact.ImpactPoint.X;
+	//		//StartVector.Y = Impact.ImpactPoint.Y;
+	//		float x = FMath::RandRange((-1) * Radius, Radius);
+	//		float y = FMath::RandRange((-1) * Radius, Radius);
+	//		StartVector.X = FMath::Clamp(Impact.ImpactPoint.X + x, (Impact.ImpactPoint.X - Radius-50), (Impact.ImpactPoint.X + Radius+50)); 
+	//		StartVector.Y = FMath::Clamp(Impact.ImpactPoint.Y + y, (Impact.ImpactPoint.Y - Radius-50), (Impact.ImpactPoint.Y + Radius+50));
+	//		ImpactVector = Impact.ImpactPoint;
+	//		ImpactVector.Z = Impact.ImpactPoint.Z + StartHeight;
+	//		ImpactVector.X = FMath::Clamp(Impact.ImpactPoint.X + FMath::RandRange((-1) * Radius, Radius), (Impact.ImpactPoint.X - Radius), (Impact.ImpactPoint.X + Radius)); 
+	//		ImpactVector.Y = FMath::Clamp(Impact.ImpactPoint.Y + FMath::RandRange((-1) * Radius, Radius), (Impact.ImpactPoint.Y - Radius), (Impact.ImpactPoint.Y + Radius));
+	//		ImpactVector = ImpactVector + FVector(0,0,-3000);
+	//		//FVector EndTrace = ImpactVector*1000;
+	//		FVector AdjustedDir = (ImpactVector - StartVector).SafeNormal();
+	//		DrawDebugLine(GetCurrentWorld(), StartVector, ImpactVector, FColor::Blue, false, 10.0f, 0.0f, 2.0f);
+	//		//Impact.ImpactPoint.Y = Impact.ImpactPoint.Y + 500.0f;
+	//		//Impact.ImpactPoint.X = Impact.ImpactPoint.X + 500.0f;
+	//		FHitResult ProperHit = RangedPowerTrace(StartVector, ImpactVector);
+	//		
+	//		DrawDebugLine(GetCurrentWorld(), StartVector, ProperHit.ImpactPoint, FColor::Green, false, 10.0f, 0.0f, 2.0f);
+	//		FTransform SpawnTM(FRotator(0,0,0), StartVector);
+	//		//FTransform SpawnTM(ProperHit.ImpactPoint.Rotation(), StartVector);
+	//		ARPGProjectile* proj = Cast<ARPGProjectile>(UGameplayStatics::BeginSpawningActorFromClass(PowerOwner, Projectile, SpawnTM));
+	//		if (proj)
+	//		{
+	//			proj->Instigator = PowerOwner;
+	//			proj->SetOwner(PowerOwner);
+	//			//ProperHit.ImpactPoint;
+	//			//ImpactVector.Z = ImpactVector.Z * (-1);
+	//			FVector AdjustedDir = (ProperHit.ImpactPoint - StartVector).SafeNormal();
+	//			ProperHit.ImpactNormal = ProperHit.ImpactNormal * (-1);
+	//			
+	//			proj->InitVelocity(ProperHit.ImpactNormal);
+	//			//DrawDebugSphere(GetWorld(), StartVector, proj->CollisionSphereRadius, 32, FColor::Red, false, 10.0f);
+	//			UGameplayStatics::FinishSpawningActor(proj, SpawnTM);
+	//		}
 	//	}
 	//}
 }
-
-void URPGPowerBase::SpawnProjectileAtLocationRadius(TSubclassOf<class ARPGProjectile> Projectile, FHitResult Impact, float Radius, int32 ProjectileNumber)
+void URPGPowerBase::SpawnEffectActorAtLocation(TSubclassOf<class ARPGEffectActor> effectActor, FHitResult HitLocation, float Height)
 {
+	//ok this is dumb implementation just to check some things..
+	
+	HitLocation.ImpactPoint.Z += Height;
 
-	if(Impact.GetActor())
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.bNoCollisionFail = true;
+	SpawnInfo.Owner = PowerOwner;
+	SpawnInfo.Instigator = NULL;
+	
+	//ARPGProjectileSpawner* spawner = GetWorld()->SpawnActor<ARPGProjectileSpawner>(effectActor, HitLocation.ImpactNormal, FRotator(0, 0, 0), SpawnInfo);
+	
+	FTransform SpawnTM(FRotator(0, 0, 0), HitLocation.ImpactPoint);
+	//spawner->OnConstruction(SpawnTM);
+	//spawner->PostActorConstruction();
+	ARPGProjectileSpawner* spawner = Cast<ARPGProjectileSpawner>(UGameplayStatics::BeginSpawningActorFromClass(PowerOwner, effectActor, SpawnTM));
+	if (spawner)
 	{
-		for(int32 i = 0; i < ProjectileNumber; i++)
-		{
-			FVector ImpactVector = FVector::ZeroVector;
-			FVector StartVector;
-			/*Impact.ImpactPoint.Z = Impact.ImpactPoint.Z + 800.0f;
-			Impact.ImpactPoint.X = FMath::Clamp(Impact.ImpactPoint.X + FMath::RandRange(-Radius, Radius), (Impact.ImpactPoint.X - Radius), (Impact.ImpactPoint.X + Radius)); 
-			Impact.ImpactPoint.Y = FMath::Clamp(Impact.ImpactPoint.Y + FMath::RandRange(-Radius, Radius), (Impact.ImpactPoint.Y - Radius), (Impact.ImpactPoint.Y + Radius));*/
-			
-			StartVector.Z = Impact.ImpactPoint.Z+800.0f;
-			//StartVector.X = Impact.ImpactPoint.X;
-			//StartVector.Y = Impact.ImpactPoint.Y;
-			float x = FMath::RandRange((-1) * Radius, Radius);
-			float y = FMath::RandRange((-1) * Radius, Radius);
-			StartVector.X = FMath::Clamp(Impact.ImpactPoint.X + x, (Impact.ImpactPoint.X - Radius), (Impact.ImpactPoint.X + Radius)); 
-			StartVector.Y = FMath::Clamp(Impact.ImpactPoint.Y + y, (Impact.ImpactPoint.Y - Radius), (Impact.ImpactPoint.Y + Radius));
-			ImpactVector = Impact.ImpactPoint;
-			ImpactVector.Z = Impact.ImpactPoint.Z + 800.0f;
-			ImpactVector.X = FMath::Clamp(Impact.ImpactPoint.X + FMath::RandRange((-1) * Radius, Radius), (Impact.ImpactPoint.X - Radius), (Impact.ImpactPoint.X + Radius)); 
-			ImpactVector.Y = FMath::Clamp(Impact.ImpactPoint.Y + FMath::RandRange((-1) * Radius, Radius), (Impact.ImpactPoint.Y - Radius), (Impact.ImpactPoint.Y + Radius));
-			ImpactVector = ImpactVector + FVector(0,0,-3000);
-			//FVector EndTrace = ImpactVector*1000;
-			FVector AdjustedDir = (ImpactVector - StartVector).SafeNormal();
-			DrawDebugLine(GetCurrentWorld(), StartVector, ImpactVector, FColor::Blue, false, 10.0f, 0.0f, 2.0f);
-			//Impact.ImpactPoint.Y = Impact.ImpactPoint.Y + 500.0f;
-			//Impact.ImpactPoint.X = Impact.ImpactPoint.X + 500.0f;
-			FHitResult ProperHit = RangedPowerTrace(StartVector, ImpactVector);
-			DrawDebugLine(GetCurrentWorld(), StartVector, ProperHit.ImpactPoint, FColor::Green, false, 10.0f, 0.0f, 2.0f);
-			//FTransform SpawnTM(FRotator(0,0,0), StartVector);
-			FTransform SpawnTM(ProperHit.ImpactPoint.Rotation(), StartVector);
-			ARPGProjectile* proj = Cast<ARPGProjectile>(UGameplayStatics::BeginSpawningActorFromClass(PowerOwner, Projectile, SpawnTM));
-			if (proj)
-			{
-				proj->Instigator = PowerOwner;
-				proj->SetOwner(PowerOwner);
-				//ProperHit.ImpactPoint;
-				//ImpactVector.Z = ImpactVector.Z * (-1);
-				FVector AdjustedDir = (ProperHit.ImpactPoint - StartVector).SafeNormal();
-				ProperHit.ImpactNormal = ProperHit.ImpactNormal * (-1);
-				
-				proj->InitVelocity(ProperHit.ImpactNormal);
-				UGameplayStatics::FinishSpawningActor(proj, SpawnTM);
-			}
-		}
+		spawner->SetSpawnLocation(HitLocation.ImpactPoint);
+		UGameplayStatics::FinishSpawningActor(spawner, SpawnTM);
 	}
 }
-
 /**
 Blueprint helpers END
 **/
