@@ -65,8 +65,8 @@ void URPGEquipmentManagerComponent::SetCharacterStats(ARPGItem* item)
 
 				if(item->Constitution > EquipedItems[0]->Constitution)
 				{
-					attributeComp->SubtractConstitution(EquipedItems[0]->Constitution);
-					attributeComp->AddConstitution(item->Constitution);
+					//attributeComp->SubtractConstitution(EquipedItems[0]->Constitution);
+					//attributeComp->AddConstitution(item->Constitution);
 				}						
 			}
 		}
@@ -74,7 +74,7 @@ void URPGEquipmentManagerComponent::SetCharacterStats(ARPGItem* item)
 		{
 			if(item->Constitution != 0) 
 			{
-				attributeComp->AddConstitution(item->Constitution);
+				//attributeComp->AddConstitution(item->Constitution);
 			}
 		}
 	}
@@ -187,7 +187,7 @@ void URPGEquipmentManagerComponent::UnEquipItem(ARPGItem* item)
 	{
 		if(item->Constitution != 0)
 		{
-			attributeComp->SubtractConstitution(item->Constitution);
+			//attributeComp->SubtractConstitution(item->Constitution);
 			if(EquipedItems.Num() > 0)
 			{
 				for(ARPGItem* itemInArray : EquipedItems)

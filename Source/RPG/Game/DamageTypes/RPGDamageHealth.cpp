@@ -17,12 +17,12 @@ float URPGDamageHealth::DealDamage(ARPGCharacter* causer, float damageAmount)
 		first we should calculate damage, by using any modifiers to the damageAmount input, we see fit.
 		and then subtract health from character (or anything else for that matter)
 		*/
-		if (DamageCauser->SpellCritted())
-		{
-			DamageTarget->SubtractHealth(damageAmount*2);
-			return 0;
-		}
-		DamageTarget->SubtractHealth(damageAmount);
+		//if (DamageCauser->SpellCritted())
+		//{
+		//	DamageTarget->SubtractHealth(damageAmount*2);
+		//	return 0;
+		//}
+		//DamageTarget->SubtractHealth(damageAmount);
 		/*
 		this is very ugly hack, so we can pass how much damage we have dealth to target back to the caster.
 		It should be moved into data structure. Possibily accessed trough getter/setter

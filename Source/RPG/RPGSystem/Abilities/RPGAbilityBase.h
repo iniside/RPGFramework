@@ -44,6 +44,7 @@ enum ECastType
 	Instant
 };
 
+
 UCLASS(BlueprintType, Blueprintable)
 class URPGAbilityBase : public UObject, public FTickableGameObject
 {
@@ -64,8 +65,8 @@ class URPGAbilityBase : public UObject, public FTickableGameObject
 	*/
 	/*
 	*/
-	virtual void StartAbility();
-	virtual void StopAbility();
+	virtual void InputPressed();
+	virtual void InputReleased();
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Ability|Events")
 	void OnAbilityStart();
@@ -73,11 +74,13 @@ class URPGAbilityBase : public UObject, public FTickableGameObject
 	void OnAbilityStop();
 
 	/*
-	 Ovrride it to make you game specific initializations here.
+		Call only when ability is equiped for use. Ie. dragged to hotbar, or prepared from spellbook.
+		Assign any properties that are needed prior ability can be used. 
+		For example check for componenets.
 	*/
-	virtual bool Initialize();
+	virtual void Initialize(APawn* owner, AController* instigator);
 	//should it be here or move it game specific ?
-public:
+protected:
 	UPROPERTY(EditAnywhere, Category = "Ability Properties")
 		float MaxCastTime;
 
@@ -90,6 +93,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Ability Properties")
 		float AbilityCooldownTime;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability Data")
+		UDataTable* AbilityDataTable;
+
 private:
 	bool isChanneled;
 	bool isCasted;
@@ -99,7 +105,8 @@ private:
 	float currentCooldownTime;
 	float currentCastTime;
 	float currentChargeTime;
-
+protected:
+	bool IsAbilityInitialized;
 public:
 	UPROPERTY(EditAnywhere, Category = "Ability Properties")
 	TEnumAsByte<ECastType> AbilityCastType;

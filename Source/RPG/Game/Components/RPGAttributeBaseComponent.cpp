@@ -2,6 +2,7 @@
 
 #pragma once
 #include "RPG.h"
+#include "../GameAttributes.h"
 #include "RPGAttributeBaseComponent.h"
 
 URPGAttributeBaseComponent::URPGAttributeBaseComponent(const class FPostConstructInitializeProperties& PCIP)
@@ -9,6 +10,8 @@ URPGAttributeBaseComponent::URPGAttributeBaseComponent(const class FPostConstruc
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	bWantsInitializeComponent = true;
+
+
 }
 void URPGAttributeBaseComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
@@ -70,7 +73,7 @@ void URPGAttributeBaseComponent::OnRegister()
 	SetMaxHealth();
 	SetMaxEnergy();
 	SetMaxStamina();
-	SetSpellCritChance();
+	//SetSpellCritChance();
 }
 void URPGAttributeBaseComponent::PostInitProperties()
 {

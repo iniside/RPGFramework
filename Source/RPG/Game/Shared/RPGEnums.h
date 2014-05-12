@@ -29,3 +29,32 @@ enum EWeaponType
 	Bow,
 	Crossbow
 };
+
+UENUM()
+enum EEffectType
+{
+	Hex,
+	Curse,
+	Enchantment
+};
+
+USTRUCT(BlueprintType, Blueprintable)
+struct FAttributeData : public FTableRowBase
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+
+	FAttributeData()
+		: Attribute(""),
+		AttributeValue(0)
+	{}
+
+	/** The 'Name' column is the same as the XP Level */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LevelUp)
+		FName Attribute;
+
+	/** This was the old property name (represented total XP) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = LevelUp)
+		float AttributeValue;
+};

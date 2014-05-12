@@ -128,7 +128,6 @@ private:
 	float currentEnergyRegenInterval;
 	float currentStaminaRegenInterval;
 	float value;
-	class URPGAttributesBase* GetOrCreateAttributes();
 public:
 
 	FORCEINLINE float GetHealth() { return Health; };

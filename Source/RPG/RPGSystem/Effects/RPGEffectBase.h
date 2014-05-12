@@ -3,6 +3,7 @@
 #pragma once
 #include "Object.h"
 #include "Tickable.h"
+#include "GameplayTagContainer.h"
 #include "RPGEffectBase.generated.h"
 
 UENUM()
@@ -13,7 +14,14 @@ enum EApplicationType
 	Infinite
 };
 
-UCLASS(Blueprintable, BlueprintType)
+UENUM()
+enum EEffectDuration
+{
+	InfiniteDuration,
+	Period
+};
+
+UCLASS(Blueprintable, BlueprintType, MinimalAPI)
 class URPGEffectBase : public UObject , public FTickableGameObject
 {
 	GENERATED_UCLASS_BODY()
@@ -37,8 +45,37 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Base Properties")
 	bool StackDuration;
 
+	//Like healing
+	UPROPERTY(EditAnywhere, Instanced, Category = "Attribute Modification")
+		float PositiveMod;
+
+	//like damage
+	UPROPERTY(EditAnywhere, Instanced, Category = "Attribute Modification")
+		float NegativeMod;
+
 	UPROPERTY(EditAnywhere, Category = "Base Properties")
 		TEnumAsByte<EApplicationType> ApplicationType;
+
+	/*
+		Effect with the same Owned tags, can be affected by this effect
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tags")
+	FGameplayTagContainer OwnedTags;
+
+	/*
+		Effect that I try to affect must have these tags.
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tags")
+		FGameplayTagContainer RequiredTags;
+
+	/*
+		Effect with those tags should be ignored by this effect
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tags")
+	FGameplayTagContainer IgnoredTags;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
+		UDataTable* EffectData;
 
 protected:
 	/**
@@ -59,15 +96,25 @@ protected:
 	UPROPERTY()
 	bool IsEffectActive;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+		TArray<FName> AttributesToModify;
+
+	UPROPERTY(BlueprintReadOnly, Category="Attributes")
+	class URPGAttributeComponent* TargetAttributes;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	class URPGAttributeComponent* CauserAttributes;
+
 public:
 	FORCEINLINE void SetTarget(AActor* target) { Target = target; };
 	FORCEINLINE void SetCauser(AActor* causer) { CausedBy = causer; };
-	/*
-	* implementation specific to effect
-	*/
-	virtual void AddEffect();
+	//FORCEINLINE void SetTargetAttributes(URPGAttributeBase* attributes) { CausedBy = causer; };
+
 	/** 
+	 Do preinitialization taks. Like assign tags.
+	 Anything that do not invovlve Target or CausedBy can be setup here.
 	*/
+	virtual void PreInitialize();
 	virtual bool Initialize();
 
 	/** 
@@ -85,30 +132,26 @@ public:
 	void OnEffectEnd();
 
 	UFUNCTION(BlueprintImplementableEvent, Category=PowerEffectEvents)
-	void OnEffectTick();
+	void OnEffectPeriod();
 
 	UFUNCTION(BlueprintImplementableEvent, Category=PowerEffectEvents)
 	void OnValueChanged();
 
 	UFUNCTION(BlueprintImplementableEvent, Category = PowerEffectEvents)
-	void OnEffectTickFrame();
+	void OnEffectTick();
 
-	/*
-		Remove single effect from array (first match, first remove). Best used with OnEffectTick event, 
-		so it will remove one effect every tick for said duration.
-		Another appilance is, to remove effect every tick, count effects removed, and then at 
-		this effect duration do something. Like Effects Removed x 5 = damage. appiled to target.
-	*/
-
+	//UFUNCTION(BlueprintCallable, Category = "Effects")
+	//	void ApplyEffectFromEffect(TSubclassOf<class URPGEffectBase> Effect);
 
 protected:
-	virtual void SelfRemoveEffect();
+	void SelfRemoveEffect();
 private:
-	float currentTickTime;
+	float currentPeriodTime;
 	float currentDuration;
 	float OriginalConstitution;
 	float AttributeDecrease;
 	float MaxHealthDrain;
+	//class URPGAttributeComponent* targetAttributeComponent;
 protected:
 	virtual class UWorld* GetWorld() const OVERRIDE;
 };

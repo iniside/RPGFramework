@@ -18,8 +18,7 @@ void URPGAbilityManagerComponent::AddPower(TSubclassOf<URPGAbilityBase> ability,
 	{
 		URPGAbilityBase* abilityObj = ConstructObject<URPGAbilityBase>(ability);
 
-		abilityObj->SetAbilityOwner(Owner);
-		abilityObj->SetInstigator(Owner->Controller);
+		abilityObj->Initialize(Owner, Owner->Controller);
 		
 		//abilityObj->SetPowerOner(MyPawn);
 		//powerObj->SetMainCasterWeapon(MyPawn->EquipmentManager->MainWeapon);

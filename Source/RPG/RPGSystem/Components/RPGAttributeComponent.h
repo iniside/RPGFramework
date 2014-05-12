@@ -4,8 +4,7 @@
 #include "RPG.h"
 #include "RPGAttributeComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCallMeEvent);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttributeChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRecievedEffect, class AActor*, WhoRecievedEffect);
 //DECLARE_DELEGATE_RetVal(URPGPowerBase, FOnNewPowerAdded);
 /**
  * Idea for this, come from Epic source (you can look it Runtime/Skillsystem).
@@ -32,13 +31,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAttributeChanged);
  * Effects in the essence, modify attributes
  */
 UENUM()
-enum EAttributeChange
+enum EAttributeOperation
 {
-	Add,
-	Subtract,
-	Multiply,
-	Divide,
-	Override
+	Attribute_Add,
+	Attribute_Subtract,
+	Attribute_Multiply,
+	Attribute_Divide,
+	Attribute_Set
 };
 
 UCLASS(meta = (BlueprintSpawnableComponent), hidecategories = (Object, LOD, Lighting, Transform, Sockets, TextureStreaming))
@@ -52,26 +51,46 @@ class URPGAttributeComponent : public UActorComponent
 public:
 	void TakeDamage(float Damage, TSubclassOf<class URPGDamageType> DamageType);
 
-	UPROPERTY(BlueprintAssignable, Category=AttributeEvents)
-	FOnCallMeEvent OnCallMeEvent;
-	UPROPERTY(BlueprintAssignable, Category = AttributeEvents)
-	FOnAttributeChanged OnAttributeChanged;
-
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AttributeEvents)
 	void OnDamageAppiled();
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AttributeEvents)
 	void OnActorDeath();
+public:
+	UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "Attributes")
+		FOnRecievedEffect OnRecivedEffect;
 
-	//Effect Managment
+	UFUNCTION(BlueprintImplementableEvent, Category = "Attributes")
+		void OnEffectAppiledToMe();
 public:
 	UPROPERTY(BlueprintReadWrite, Category = EffectList)
-		TArray<class URPGEffectBase*> EffectsList;
+	TArray<class URPGEffectBase*> EffectsList;
 
-	void AddEffect(class URPGEffectBase* newEffect);
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
+	//TSubclassOf<class URPGAttributeBase> AttributeClass;
+
+	//UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	//URPGAttributeBase* AttributeObj;
+
 	void RemoveEffect(class URPGEffectBase* effectToRemove);
+
+	virtual void ApplyEffect(AActor* Target, AActor* CausedBy, TSubclassOf<class URPGEffectBase> Effect);
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+		UProperty* GetAttribute(FName AtributeName, TSubclassOf<URPGAttributeComponent> AttributeClass);
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+		float GetNumericValue(FName AttributeName);
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+		void SetNumericValue(float value, FName AttributeName);
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+		void ModifyAttribute(FName AttributeName, float Value, TEnumAsByte<EAttributeOperation> OperationType);
 
 protected:
 	void DestroyEffect(class URPGEffectBase* EffectToDestroy);
+	void SetPeriodicEffect(class URPGEffectBase* newEffect);
+	//void GetOrCreateAttribute();
 };
 
 /*

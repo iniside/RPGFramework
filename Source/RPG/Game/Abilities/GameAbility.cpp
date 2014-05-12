@@ -25,9 +25,9 @@ void UGameAbility::Tick(float DeltaTime)
 	If there is no component on actor then we don't initialize
 	because powers need attributes to work properly.
 */
-bool UGameAbility::Initialize()
+void UGameAbility::Initialize(APawn* owner, AController* instigator)
 {
-	Super::Initialize();
+	Super::Initialize(owner, instigator);
 	if (AbilityOwner)
 	{
 		if (GetWorld())
@@ -45,24 +45,30 @@ bool UGameAbility::Initialize()
 			}
 			if (OwnerAttributes && EquipComp)
 			{
-				MainHand = EquipComp->MainWeapon;
-				OffHand = EquipComp->OffHandWeapon;
-				return true;
+				IsAbilityInitialized = true;
+				return;
 			}
-			return false;
+			IsAbilityInitialized = false;
 		}
-		return false;
+		IsAbilityInitialized = false;
 	}
-	return false;
+	IsAbilityInitialized = false;
 }
 
-void UGameAbility::StartAbility()
+void UGameAbility::InputPressed()
 {
 	bool haveRequiredWeapon = false;
-	if (Initialize())
+	if (IsAbilityInitialized)
 	{
-		if (!CalculateFinalCost(BaseEnergyCost, BaseHealthCost, BaseStaminaCost))
-			return;
+		//if (!CalculateFinalCost(BaseEnergyCost, BaseHealthCost, BaseStaminaCost))
+			//return;
+		/*
+			We assign weapon on button press, to make sure that when player changed weapon
+			we can check if there is required weapon.
+		*/
+		MainHand = EquipComp->MainWeapon;
+		OffHand = EquipComp->OffHandWeapon;
+
 		if (MainHand)
 		{
 			if (MainHand->WeaponType == RequiredWeapon)
@@ -89,13 +95,13 @@ void UGameAbility::StartAbility()
 				return;
 			}
 		}
-		Super::StartAbility();
+		Super::InputPressed();
 	}
 }
 
-void UGameAbility::StopAbility()
+void UGameAbility::InputReleased()
 {
-	Super::StopAbility();
+	Super::InputReleased();
 	//if (AbilityCastType == ECastType::Channeled)
 	//{
 	//	OnAbilityStop();
@@ -110,16 +116,16 @@ bool UGameAbility::CalculateFinalCost(float energyCost, float healthCost, float 
 	float FinalStaminaCost = staminaCost;
 	//now we check:
 	//if we got this far, there is no chance that component is null.
-	if ((OwnerAttributes->GetEnergy() >= FinalEnergyCost) &&
-		(OwnerAttributes->GetHealth() >= FinalHealthCost) &&
-		(OwnerAttributes->GetStamina() >= FinalStaminaCost)
-		)
-	{
-		OwnerAttributes->SubtractEnergy(FinalEnergyCost);
-		OwnerAttributes->SubtractHealth(FinalHealthCost);
-		OwnerAttributes->SubtractStamina(FinalStaminaCost);
-		return true;
-	}
+	//if ((OwnerAttributes->GetEnergy() >= FinalEnergyCost) &&
+	//	(OwnerAttributes->GetHealth() >= FinalHealthCost) &&
+	//	(OwnerAttributes->GetStamina() >= FinalStaminaCost)
+	//	)
+	//{
+	//	OwnerAttributes->SubtractEnergy(FinalEnergyCost);
+	//	OwnerAttributes->SubtractHealth(FinalHealthCost);
+	//	OwnerAttributes->SubtractStamina(FinalStaminaCost);
+	//	return true;
+	//}
 
 	//if (OwnerAttributeComp->GetHealth() >= FinalHealthCost)
 	//{
@@ -315,4 +321,18 @@ FHitResult UGameAbility::RangedPowerTrace(const FVector& StartTrace, const FVect
 	bool traceResult = GetWorld()->LineTraceSingle(Hit, StartTrace, EndTrace, ECollisionChannel::ECC_WorldDynamic, TraceParams);
 
 	return Hit;
+}
+
+void UGameAbility::GetTableRow(UDataTable* Data, FName RowID, FAttributeData& OutData)
+{
+	if (Data)
+	{
+		FAttributeData* tempRow = NULL;
+		tempRow = Data->FindRow<FAttributeData>(RowID, "ContextString");
+		if (tempRow)
+		{
+			OutData = *tempRow;
+		}
+		//return tempRow;
+	}
 }

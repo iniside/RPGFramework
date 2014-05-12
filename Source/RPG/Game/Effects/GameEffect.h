@@ -4,6 +4,7 @@
 #include "Object.h"
 #include "Tickable.h"
 #include "../../RPGSystem/Effects/RPGEffectBase.h"
+#include "../Shared/RPGEnums.h"
 #include "GameEffect.generated.h"
 
 UCLASS(Blueprintable, BlueprintType)
@@ -13,15 +14,11 @@ class UGameEffect : public URPGEffectBase
 
 	virtual void Tick(float DeltaTime)  OVERRIDE;
 
-
+	virtual void PreInitialize() OVERRIDE;
 	virtual bool Initialize() OVERRIDE;
-	
-	virtual void AddEffect() OVERRIDE;
-	
-	virtual void SelfRemoveEffect() OVERRIDE;
-	
-	UPROPERTY(BlueprintReadOnly, Category="Effect|Attributes")
-	class URPGAttributeBaseComponent* TargetAttributes;
+
+	UPROPERTY(EditAnywhere, Category = "Effect Type")
+		TEnumAsByte<EEffectType> EffectType;
 
 protected:
 	

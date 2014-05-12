@@ -54,6 +54,9 @@ class URPGDamageType : public UDamageType
 
 	FORCEINLINE void SetDamageTarget(URPGAttributeBaseComponent* target) { DamageTarget = target; };
 	FORCEINLINE void SetDamageCauser(URPGAttributeBaseComponent* causer) { DamageCauser = causer; };
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, EditInline, Category = "Lol")
+		float BaseDamage;
 protected:
 	class URPGAttributeBaseComponent* DamageTarget;
 	class URPGAttributeBaseComponent* DamageCauser;

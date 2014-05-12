@@ -6,12 +6,35 @@ public class RPG : ModuleRules
 {
 	public RPG(TargetInfo Target)
 	{
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+        PublicIncludePaths.AddRange(
+        new string[] {
+					    // ... add public include paths required here ...
+				    }
+        );
+        PrivateIncludePaths.AddRange(
+        new string[] {
+					    "Runtime/GameplayTags/Private",
+					    // ... add other private include paths required here ...
+				    }
+        );
+		PublicDependencyModuleNames.AddRange(new string[] 
+        { 
+            "Core", 
+            "CoreUObject", 
+            "Engine", 
+            "InputCore", 
+            "GameplayTags",
+        });
         
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate" });
 
         DynamicallyLoadedModuleNames.Add("EditorStyle");
 
         PrivateIncludePathModuleNames.Add("EditorStyle");
+
+        if (UEBuildConfiguration.bBuildEditor == true)
+        {
+            //PrivateDependencyModuleNames.Add("GameplayTagsEditor");
+        }
     }
 }

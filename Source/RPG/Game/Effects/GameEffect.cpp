@@ -17,51 +17,54 @@ void UGameEffect::Tick( float DeltaTime)
 
 	SetTargetAttributeUpdate();
 }
-
+void UGameEffect::PreInitialize()
+{
+	switch (EffectType)
+	{
+		case EEffectType::Hex:
+			OwnedTags.AddTag("Hex");
+		default:
+			break;
+	}
+}
 bool UGameEffect::Initialize()
 {
-	//Super::Initialize();
-	IsEffectActive = false;
-	if (Target)
-	{
-		if (GetWorld())
-		{
-			TArray<URPGAttributeBaseComponent*> attributeComps;
-			Target->GetComponents<URPGAttributeBaseComponent>(attributeComps);
-			for (URPGAttributeBaseComponent* attrComp : attributeComps)
-			{
-				TargetAttributes = attrComp;
-				break;
-			}
-			if (TargetAttributes)
-			{
-				//OnEffectAppiled_Implementation();
-				OnEffectAppiled();
-				IsEffectActive = true;
-				return true;
-			}
-			return false;
-		}
-		return false;
-	}
-	return false;
-}
-
-void UGameEffect::AddEffect()
-{
-	Super::AddEffect();
-	Initialize();
-	TargetAttributes->AddEffect(this);
-}
-
-void UGameEffect::SelfRemoveEffect()
-{
-	TargetAttributes->RemoveEffect(this);
+	return Super::Initialize();
+	//IsEffectActive = false;
+	//if (Target)
+	//{
+	//	if (GetWorld())
+	//	{
+	//		TArray<URPGAttributeBaseComponent*> attributeComps;
+	//		Target->GetComponents<URPGAttributeBaseComponent>(attributeComps);
+	//		for (URPGAttributeBaseComponent* attrComp : attributeComps)
+	//		{
+	//			TargetAttributes = attrComp;
+	//			break;
+	//		}
+	//		TArray<URPGAttributeBaseComponent*> causedByAttributeComps;
+	//		CausedBy->GetComponents<URPGAttributeBaseComponent>(causedByAttributeComps);
+	//		for (URPGAttributeBaseComponent* attrComp : causedByAttributeComps)
+	//		{
+	//			CauserAttributes = attrComp;
+	//			break;
+	//		}
+	//		if (TargetAttributes)
+	//		{
+	//			OnEffectAppiled();
+	//			IsEffectActive = true;
+	//			return true;
+	//		}
+	//		return false;
+	//	}
+	//	return false;
+	//}
+	//return false;
 }
 
 void UGameEffect::SetTargetAttributeUpdate()
 {
-	TargetHealth = TargetAttributes->GetHealth();
-	TargetEnergy = TargetAttributes->GetEnergy();
-	TargetStamina = TargetAttributes->GetStamina();
+	//TargetHealth = TargetAttributes->GetHealth();
+	//TargetEnergy = TargetAttributes->GetEnergy();
+	//TargetStamina = TargetAttributes->GetStamina();
 }

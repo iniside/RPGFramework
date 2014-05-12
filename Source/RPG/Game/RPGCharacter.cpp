@@ -250,7 +250,6 @@ void ARPGCharacter::OnConstruction(const FTransform& Transform)
 void ARPGCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	Attributes->SetMaxHealth();
 }
 void ARPGCharacter::Tick(float DeltaSeconds)
 {
@@ -330,7 +329,7 @@ void ARPGCharacter::ActionButtonOne()
 	ARPGPlayerController* PC = Cast<ARPGPlayerController>(Controller);
 	if (PC)
 	{
-		AbilityManager->GetButtonOne()->StartAbility();
+		AbilityManager->GetButtonOne()->InputPressed();
 		OnCharacterCast.Broadcast();
 	}
 }
@@ -340,7 +339,7 @@ void ARPGCharacter::ActionButtonOneReleased()
 	ARPGPlayerController* PC = Cast<ARPGPlayerController>(Controller);
 	if (PC)
 	{
-		AbilityManager->GetButtonOne()->StopAbility();
+		AbilityManager->GetButtonOne()->InputReleased();
 	}
 }
 

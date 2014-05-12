@@ -6,7 +6,6 @@
 #include "../Shared/RPGEnums.h"
 #include "GameAbility.generated.h"
 
-
 UCLASS(BlueprintType, Blueprintable)
 class UGameAbility : public URPGAbilityBase
 {
@@ -14,10 +13,10 @@ class UGameAbility : public URPGAbilityBase
 
 	virtual void Tick(float DeltaTime)  OVERRIDE;
 
-	virtual void StartAbility() OVERRIDE;
-	virtual void StopAbility() OVERRIDE;
+	virtual void InputPressed() OVERRIDE;
+	virtual void InputReleased() OVERRIDE;
 protected:
-	virtual bool Initialize() OVERRIDE;
+	virtual void Initialize(APawn* owner, AController* instigator) OVERRIDE;
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Ability Requierments")
@@ -35,9 +34,12 @@ public:
 	AActor* GetActorHit(float Range, FName StartSocke);
 
 	UFUNCTION(BlueprintCallable, Category = "Ability|Helpers")
-		void SpawnTrailEffect(UParticleSystem* trailFX, float trailSpeed, FName trailSpeedParam, FHitResult target, FName SocketName);
+	void SpawnTrailEffect(UParticleSystem* trailFX, float trailSpeed, FName trailSpeedParam, FHitResult target, FName SocketName);
 
-public:
+	UFUNCTION(BlueprintCallable, Category = "Ability|Data")
+		void GetTableRow(UDataTable* Data, FName RowID, FAttributeData& OutData);
+
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability|Cost")
 		float BaseHealthCost;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability|Cost")

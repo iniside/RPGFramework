@@ -15,23 +15,20 @@ void URPGEffectBase::Tick( float DeltaTime)
 {
 	//Super::Tick(DeltaTime);
 
-	currentTickTime += DeltaTime;
-	if(currentTickTime >= TickDuration)
+	currentPeriodTime += DeltaTime;
+	if (currentPeriodTime >= TickDuration)
 	{
-		if(GetWorld())
-		{
-			OnEffectTick();
-		}
-		currentTickTime = 0;
+		OnEffectPeriod();
+		currentPeriodTime = 0;
 	}
 	currentDuration += DeltaTime;
 	if(currentDuration >= Duration)
 	{
 		currentDuration = 0;
-		OnEffectEnd();
+		//OnEffectEnd();
 		SelfRemoveEffect();
 	}
-	OnEffectTickFrame(); //this will tick every frame.
+	OnEffectTick(); //this will tick every frame.
 }
 bool URPGEffectBase::IsTickable() const
 {
@@ -60,10 +57,45 @@ TStatId URPGEffectBase::GetStatId() const
 {
 	return this->GetStatID();
 }
+
+void URPGEffectBase::PreInitialize()
+{
+
+}
 //change to to bool
 //so we can check if effect has been initialized properly
 bool URPGEffectBase::Initialize()
 {
+	if (Target)
+	{
+		TArray<URPGAttributeComponent*> effectMngComps;
+		URPGAttributeComponent* effectMngrComp = NULL;
+		Target->GetComponents<URPGAttributeComponent>(effectMngComps);
+		for (URPGAttributeComponent* effectMngComp : effectMngComps)
+		{
+			effectMngrComp = effectMngComp;
+			break;
+		}
+		TArray<URPGAttributeComponent*> CausedByAttributes;
+		URPGAttributeComponent* CausedByAttribute = NULL;
+		CausedBy->GetComponents<URPGAttributeComponent>(CausedByAttributes);
+		for (URPGAttributeComponent* effectMngComp : effectMngComps)
+		{
+			CausedByAttribute = effectMngComp;
+			break;
+		}
+
+		if (effectMngrComp && CausedByAttribute)
+		{
+			TargetAttributes = effectMngrComp;
+			CauserAttributes = CausedByAttribute;
+			//targetAttributeComponent = effectMngrComp;
+		}
+		OnEffectAppiled();
+		IsEffectActive = true;
+		IsEffectAppiled = true;
+		return true;
+	}
 	return false;
 }
 
@@ -75,17 +107,23 @@ void URPGEffectBase::Deinitialize()
 	IsEffectActive = false;
 }
 
-
-void URPGEffectBase::AddEffect()
-{
-	//Initialize();
-	//TargetAttributeComp->AddEffect(this);
-}
-
 void URPGEffectBase::SelfRemoveEffect()
 {
-
+	OnEffectEnd(); //we gice chance to excute any logic before effect is completly removed
+	if (ApplicationType != EApplicationType::InstantApplication)
+	{
+		TargetAttributes->RemoveEffect(this);
+	}
 }
+
+//void URPGEffectBase::ApplyEffectFromEffect(TSubclassOf<class URPGEffectBase> Effect)
+//{
+//	if (Target && TargetAttributes)
+//	{
+//		TargetAttributes->ApplyEffect(Target, Effect);
+//	}
+//}
+
 
 UWorld* URPGEffectBase::GetWorld() const
 {

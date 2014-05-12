@@ -86,8 +86,11 @@ UWorld* URPGAbilityBase::GetWorld() const
 	If there is no component on actor then we don't initialize
 	because powers need attributes to work properly.
 */
-bool URPGAbilityBase::Initialize()
+void URPGAbilityBase::Initialize(APawn* owner, AController* instigator)
 {
+	AbilityOwner = owner;
+	Instigator = instigator;
+
 	if (AbilityOwner)
 	{
 		if (GetWorld())
@@ -101,19 +104,20 @@ bool URPGAbilityBase::Initialize()
 			}
 			if (OwnerAttributeComp)
 			{
-				return true;
+				IsAbilityInitialized = true;
+				return;
 			}
-			return false;
+			IsAbilityInitialized = false;
 		}
-		return false;
+		IsAbilityInitialized =  false;
 	}
-	return false;
+	IsAbilityInitialized =  false;
 }
 
-void URPGAbilityBase::StartAbility()
+void URPGAbilityBase::InputPressed()
 {
 	bool haveRequiredWeapon = false;
-	if (Initialize())
+	if (IsAbilityInitialized)
 	{
 		/*
 		in reality we need more sophisitacted cooldown handling. If user for example
@@ -141,7 +145,7 @@ void URPGAbilityBase::StartAbility()
 	}
 }
 
-void URPGAbilityBase::StopAbility()
+void URPGAbilityBase::InputReleased()
 {
 	if (AbilityCastType == ECastType::Channeled)
 	{
@@ -149,3 +153,4 @@ void URPGAbilityBase::StopAbility()
 		isChanneled = false;
 	}
 }
+
