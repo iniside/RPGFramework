@@ -2,6 +2,7 @@
 
 #pragma once
 #include "Object.h"
+#include "GameplayTagContainer.h"
 #include "RPGAbilityBase.generated.h"
 
 /**
@@ -44,6 +45,17 @@ enum ECastType
 	Instant
 };
 
+USTRUCT()
+struct FAbilityCost
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Ability Cost")
+	FName AttributeName;
+
+	UPROPERTY(EditAnywhere, Category = "Ability Cost")
+	float Cost;
+};
 
 UCLASS(BlueprintType, Blueprintable)
 class URPGAbilityBase : public UObject, public FTickableGameObject
@@ -73,6 +85,9 @@ class URPGAbilityBase : public UObject, public FTickableGameObject
 	UFUNCTION(BlueprintImplementableEvent, Category = "Ability|Events")
 	void OnAbilityStop();
 
+	UFUNCTION(BlueprintCallable, Category = "RPG|Ability")
+		float GetCurrentCooldownTime();
+
 	/*
 		Call only when ability is equiped for use. Ie. dragged to hotbar, or prepared from spellbook.
 		Assign any properties that are needed prior ability can be used. 
@@ -95,6 +110,27 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability Data")
 		UDataTable* AbilityDataTable;
+
+	UPROPERTY(EditAnywhere, Category = "Ability Properties")
+		TArray<FAbilityCost> AttributeCost;
+private:
+	bool CheckAbilityCost();
+public:
+	/*
+		Effect for handling Cooldown of ability.
+	*/
+	UPROPERTY(EditAnywhere, Category = "Ability Properties")
+		TSubclassOf<class URPGEffectBase> CooldownEffectClass;
+
+	TWeakObjectPtr<class URPGEffectBase> CooldownEffect;
+
+	/*
+		Effect for handling casting (using) ability.
+	*/
+	UPROPERTY(EditAnywhere, Category = "Ability Properties")
+		TSubclassOf<class URPGEffectBase> CastEffectClass;
+
+	FGameplayTagContainer AbilityTags;
 
 private:
 	bool isChanneled;

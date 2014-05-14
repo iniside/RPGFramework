@@ -2,6 +2,7 @@
 #pragma once
 #include "RPG.h"
 #include "../Components/RPGAttributeComponent.h"
+#include "../Effects/RPGEffectBase.h"
 #include "RPGAbilityBase.h"
 
 
@@ -117,6 +118,35 @@ void URPGAbilityBase::Initialize(APawn* owner, AController* instigator)
 void URPGAbilityBase::InputPressed()
 {
 	bool haveRequiredWeapon = false;
+
+	if(!CheckAbilityCost())
+		return;
+
+	//if (CooldownEffectClass)
+	//{
+	//	if (!CooldownEffect.IsValid())
+	//	{
+	//		CooldownEffect = ConstructObject<URPGEffectBase>(CooldownEffectClass);
+	//		//OwnerAttributeComp->ApplyEffect(AbilityOwner, AbilityOwner, CooldownEffectClass);
+	//		CooldownEffect->SetCauser(AbilityOwner);
+	//		CooldownEffect->SetTarget(AbilityOwner);
+	//		CooldownEffect->PreInitialize();
+	//		CooldownEffect->Initialize();
+	//		
+	//		OwnerAttributeComp->EffectsList.Add(CooldownEffect);
+
+	//		AbilityTags = CooldownEffect->OwnedTags;
+	//		
+	//	}
+	//}
+
+	//if (CooldownEffect.IsValid())
+	//{
+	//	if (CooldownEffect->CurrentDuration >= CooldownEffect->TotalDuration)
+	//	{
+	//		float omg = 0;
+	//	}
+	//}
 	if (IsAbilityInitialized)
 	{
 		/*
@@ -154,3 +184,31 @@ void URPGAbilityBase::InputReleased()
 	}
 }
 
+bool URPGAbilityBase::CheckAbilityCost()
+{
+	if (AttributeCost.Num() > 0)
+	{
+		for (FAbilityCost& abilityCost : AttributeCost)
+		{
+			if (OwnerAttributeComp->IsSmaller(abilityCost.AttributeName, abilityCost.Cost))
+			{
+				return false;
+			}
+		}
+		for (FAbilityCost& abilityCost : AttributeCost)
+		{
+			OwnerAttributeComp->ModifyAttribute(abilityCost.AttributeName, abilityCost.Cost, EAttributeOperation::Attribute_Subtract);
+		}
+		return true;
+	}
+	return false;
+}
+
+float URPGAbilityBase::GetCurrentCooldownTime()
+{
+	if (CooldownEffect.IsValid())
+	{
+		return CooldownEffect->CurrentDuration;
+	}
+	return 0;
+}

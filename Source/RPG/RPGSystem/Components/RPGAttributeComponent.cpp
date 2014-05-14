@@ -50,18 +50,18 @@ void URPGAttributeComponent::ApplyEffect(AActor* Target, AActor* CausedBy, TSubc
 
 		if (effectTemp->ApplicationType == EApplicationType::InstantApplication)
 		{
+			OnRecivedEffect.Broadcast(Target, Effect);
 			effectTemp->Deinitialize();
 		}
 		if (effectTemp->Initialize())
 		{
 			if (effectTemp->ApplicationType == EApplicationType::Periodic)
 			{
+				//if (CausedBy != GetOwner())
+				OnRecivedEffect.Broadcast(Target, Effect);
 				SetPeriodicEffect(effectTemp);
 			}
 		}
-		OnEffectAppiledToMe();
-		OnRecivedEffect.Broadcast(GetOwner());
-		
 	}
 }
 
@@ -93,7 +93,7 @@ void URPGAttributeComponent::SetPeriodicEffect(class URPGEffectBase* newEffect)
 			{
 				//we simply get duration of current effect on array
 				//and add new duration to total pool.
-				firstMatch->Duration += newEffect->Duration;
+				firstMatch->TotalDuration += newEffect->TotalDuration;
 				return;
 			}
 
@@ -116,8 +116,9 @@ void URPGAttributeComponent::RemoveEffect(class URPGEffectBase* effectToRemove)
 	if (effectToRemove)
 	{
 		effectToRemove->Deinitialize(); //deinitialize effect so it no longer ticks		
+		OnEffectRemoved.Broadcast(effectToRemove->GetTarget(), effectToRemove->GetClass());
 		int32 element = EffectsList.Find(effectToRemove);
-		DestroyEffect(EffectsList[element]);
+		//DestroyEffect(EffectsList[element]);
 		EffectsList.RemoveSingle(effectToRemove);
 	}
 }
@@ -133,6 +134,11 @@ void URPGAttributeComponent::DestroyEffect(class URPGEffectBase* EffectToDestroy
 		}
 	}
 	GetWorld()->ForceGarbageCollection(true);
+}
+
+void URPGAttributeComponent::OnEffectAppiledToMe_Implementation()
+{
+	//nothing
 }
 
 UProperty* URPGAttributeComponent::GetAttribute(FName AtributeName, TSubclassOf<URPGAttributeComponent> AttributeClass)
@@ -173,6 +179,35 @@ void URPGAttributeComponent::SetNumericValue(float value, FName AttributeName)
 	UNumericProperty* NumericProperty = CastChecked<UNumericProperty>(GetAttribute(AttributeName, this->GetClass()));
 	void* ValuePtr = NumericProperty->ContainerPtrToValuePtr<void>(this);
 	NumericProperty->SetFloatingPointPropertyValue(ValuePtr, value);
+	OnAttributeChange.Broadcast(AttributeName, value);
+}
+
+bool URPGAttributeComponent::IsSmaller(FName AttributeName, float SmallerThan)
+{
+	float tempValue = GetNumericValue(AttributeName);
+	if (tempValue > SmallerThan)
+	{
+		return false;
+	}
+	return true;
+}
+
+bool URPGAttributeComponent::IsEqual(FName AttributeName, float EqualValue)
+{
+	float tempValue = GetNumericValue(AttributeName);
+	if (tempValue == EqualValue)
+	{
+		return true;
+	}
+	return false;
+}
+
+bool URPGAttributeComponent::Compare(FName AttributeA, FName AttributeB)
+{
+	if (GetNumericValue(AttributeA) > GetNumericValue(AttributeB))
+		return true;
+
+	return false;
 }
 
 void URPGAttributeComponent::ModifyAttribute(FName AttributeName, float Value, TEnumAsByte<EAttributeOperation> OperationType)
@@ -183,34 +218,71 @@ void URPGAttributeComponent::ModifyAttribute(FName AttributeName, float Value, T
 	switch (OperationType)
 	{
 	case EAttributeOperation::Attribute_Add:
-	{
-											   AttributeValue += Value;
-											   SetNumericValue(AttributeValue, AttributeName);
-											   return;
-	}
+		AttributeValue += Value;
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
 	case EAttributeOperation::Attribute_Subtract:
-	{
-													AttributeValue -= Value;
-													SetNumericValue(AttributeValue, AttributeName);
-													return;
-	}
+		AttributeValue -= Value;
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
 	case EAttributeOperation::Attribute_Multiply:
-	{
-													AttributeValue *= Value;
-													SetNumericValue(AttributeValue, AttributeName);
-													return;
-	}
+		AttributeValue *= Value;
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
 	case EAttributeOperation::Attribute_Divide:
-	{
-												  AttributeValue = (AttributeValue / Value);
-												  SetNumericValue(AttributeValue, AttributeName);
-												  return;
-	}
+		AttributeValue = (AttributeValue / Value);
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
 	case EAttributeOperation::Attribute_Set:
+		AttributeValue = Value;
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
+	default:
+		return;
+	}
+}
+
+void URPGAttributeComponent::ModifyAttributeList(TArray<FModdableAttributes> Attributes, TEnumAsByte<EAttributeOperation> OperationType)
+{
+	if (Attributes.Num() > 0)
 	{
-											   AttributeValue = Value;
-											   SetNumericValue(AttributeValue, AttributeName);
-											   return;
+		for (int32 Index = 0; Index < Attributes.Num(); Index++)
+		{
+			float AttributeValue = 0;
+			AttributeValue = GetNumericValue(Attributes[Index].AttributeName);
+
+			switch (OperationType)
+			{
+			case EAttributeOperation::Attribute_Add:
+				AttributeValue += Attributes[Index].ModValue;
+				SetNumericValue(AttributeValue, Attributes[Index].AttributeName);
+				break;
+			case EAttributeOperation::Attribute_Subtract:
+				AttributeValue -= Attributes[Index].ModValue;
+				SetNumericValue(AttributeValue, Attributes[Index].AttributeName);
+				break;
+			case EAttributeOperation::Attribute_Multiply:
+				AttributeValue *= Attributes[Index].ModValue;
+				SetNumericValue(AttributeValue, Attributes[Index].AttributeName);
+				break;
+			case EAttributeOperation::Attribute_Divide:
+				AttributeValue = (AttributeValue / Attributes[Index].ModValue);
+				SetNumericValue(AttributeValue, Attributes[Index].AttributeName);
+				break;
+			case EAttributeOperation::Attribute_Set:
+				AttributeValue = Attributes[Index].ModValue;
+				SetNumericValue(AttributeValue, Attributes[Index].AttributeName);
+				break;
+			default:
+				return;
+			}
+		}
 	}
-	}
+}
+
+TArray<FModdableAttributes> URPGAttributeComponent::GetAttributeList()
+{
+	TArray<FModdableAttributes> tempAttributes;
+
+	return tempAttributes;
 }

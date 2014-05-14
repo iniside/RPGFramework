@@ -28,6 +28,7 @@ class URPGAbilityManagerComponent : public UActorComponent
 
 public:
 	class URPGAbilityBase* GetButtonOne();
-private:
+protected:
+	UPROPERTY(BlueprintReadOnly, Category = "Ability")
 	class URPGAbilityBase* AbilityButtonOneObj;
 };

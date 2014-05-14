@@ -4,8 +4,11 @@
 #include "Object.h"
 #include "Tickable.h"
 #include "GameplayTagContainer.h"
+#include "../Structs/RPGSystemSructs.h"
 #include "RPGEffectBase.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEffectActivation, TSubclassOf<URPGEffectBase>, EffectClass, bool, IsEffectActive);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEffectDeactivation, TSubclassOf<URPGEffectBase>, EffectClass, bool, IsEffectActive);
 UENUM()
 enum EApplicationType
 {
@@ -29,53 +32,62 @@ class URPGEffectBase : public UObject , public FTickableGameObject
 	virtual void Tick(float DeltaTime)  OVERRIDE;
 	virtual bool IsTickable() const OVERRIDE;
 	virtual TStatId GetStatId() const OVERRIDE;
+
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=BaseProperties)
-	float Duration;
+	//it's hack for testing, don't use it!
+	UPROPERTY(EditAnywhere, Category = "Effect Type")
+		bool IsCooldownEffect;
 
 	UPROPERTY()
 	float TotalDuration;
 
-	UPROPERTY(EditAnywhere, Category = "Base Properties")
-	bool ShouldEffectTick;
-
-	UPROPERTY(EditAnywhere, Category = "Base Properties")
-	float TickDuration;
+	UPROPERTY(BlueprintReadOnly, Category = "RPG|Effect")
+	float CurrentDuration;
 
 	UPROPERTY(EditAnywhere, Category = "Base Properties")
 	bool StackDuration;
 
-	//Like healing
-	UPROPERTY(EditAnywhere, Instanced, Category = "Attribute Modification")
-		float PositiveMod;
+	UPROPERTY(EditAnywhere, Category = "Periodic Effect")
+	float PeriodLenght;
 
-	//like damage
-	UPROPERTY(EditAnywhere, Instanced, Category = "Attribute Modification")
-		float NegativeMod;
+	UPROPERTY(EditAnywhere, Category = "Periodic Effect")
+	float PeriodsCount;
 
 	UPROPERTY(EditAnywhere, Category = "Base Properties")
-		TEnumAsByte<EApplicationType> ApplicationType;
+	TEnumAsByte<EApplicationType> ApplicationType;
 
 	/*
-		Effect with the same Owned tags, can be affected by this effect
+		My Tags;
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tags")
 	FGameplayTagContainer OwnedTags;
 
 	/*
 		Effect that I try to affect must have these tags.
+		Check modified effect OwnedTags;
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tags")
-		FGameplayTagContainer RequiredTags;
+	FGameplayTagContainer RequiredTags;
 
 	/*
 		Effect with those tags should be ignored by this effect
+		Check modified effect OwnedTags;
 	*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tags")
 	FGameplayTagContainer IgnoredTags;
 
+	UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "RPG|Effect")
+	FOnEffectActivation OnEffectActivation;
+
+	UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "RPG|Effect")
+	FOnEffectDeactivation OnEffectDeactivation;
+	/*
+		Check if TargetEffect Owns any of RequiredTags.
+	*/
+	bool CanAffectEffect(URPGEffectBase* TargetEffect);
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
-		UDataTable* EffectData;
+	UDataTable* EffectData;
 
 protected:
 	/**
@@ -96,8 +108,8 @@ protected:
 	UPROPERTY()
 	bool IsEffectActive;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
-		TArray<FName> AttributesToModify;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+		TArray<FModdableAttributes> AttributesToModify;
 
 	UPROPERTY(BlueprintReadOnly, Category="Attributes")
 	class URPGAttributeComponent* TargetAttributes;
@@ -107,8 +119,11 @@ protected:
 
 public:
 	FORCEINLINE void SetTarget(AActor* target) { Target = target; };
+	FORCEINLINE AActor* GetTarget() { return Target; };
 	FORCEINLINE void SetCauser(AActor* causer) { CausedBy = causer; };
 	//FORCEINLINE void SetTargetAttributes(URPGAttributeBase* attributes) { CausedBy = causer; };
+
+	
 
 	/** 
 	 Do preinitialization taks. Like assign tags.
@@ -122,22 +137,56 @@ public:
 	*/
 	virtual void Deinitialize();
 
+	/*
+		Allow to spread another effect from effect in radius around where the effect is active.
+		Use it instead of static version, for safety and predictable results!
+	*/
+	UFUNCTION(BlueprintCallable, Category = "RPG|Effect")
+		void SpreadEffect(TSubclassOf<class URPGEffectBase> Effect, FVector HitLocation, float Radius, int32 MaxTargets);
+	
+	/*
+		Function remove effects as "frist come, first serve"
+		Return how many effects has been removed;
+	*/
+	UFUNCTION(BlueprintCallable, Category = "RPG|Effect")
+		int32 RemoveEffect(FName Tag, int32 Count, class URPGAttributeComponent* TargetToRemoveEffects);
+
+	/*
+		Attribute - Name of attribute to reduce
+		ReductionValue - By how much reduce attribute
+		ReductionTime - if 0 it will reduce for duration of effect (Default)
+	*/
+	UFUNCTION(BlueprintCallable, Category = "RPG|Effect")
+	void ReduceAttributeForDuration(FName Attribute, float ReductionValue, float ReductionTime = 0);
+private:
+		float reducedValue;
+public:
+	UFUNCTION(BlueprintCallable, Category = "RPG|Effect")
+		void ModifyTargetAttributes(TArray<FModdableAttributes> AttributesToMod, TEnumAsByte<EAttributeOperation> OperationType);
+
+	/*
+		Get Array of effects from target, which Owns any of Required Tags.
+		These effects can be modified, though dunno how...
+	*/
+	TArray < TWeakObjectPtr<URPGEffectBase> > GetModificableEffects();
+	//bool CanAffectOtherEffect()
+
 	//UPROPERTY(BlueprintAssignable)
 	//FEffectAppiledToTarget OnEffectAppiledtoTarget;
 
-	UFUNCTION(BlueprintImplementableEvent, Category = PowerEffectEvents)
+	UFUNCTION(BlueprintImplementableEvent, Category = "RPG|Effect")
 	void OnEffectAppiled();
 
-	UFUNCTION(BlueprintImplementableEvent, Category=PowerEffectEvents)
+	UFUNCTION(BlueprintImplementableEvent, Category = "RPG|Effect")
 	void OnEffectEnd();
 
-	UFUNCTION(BlueprintImplementableEvent, Category=PowerEffectEvents)
+	UFUNCTION(BlueprintImplementableEvent, Category = "RPG|Effect")
 	void OnEffectPeriod();
 
-	UFUNCTION(BlueprintImplementableEvent, Category=PowerEffectEvents)
+	UFUNCTION(BlueprintImplementableEvent, Category = "RPG|Effect")
 	void OnValueChanged();
 
-	UFUNCTION(BlueprintImplementableEvent, Category = PowerEffectEvents)
+	UFUNCTION(BlueprintImplementableEvent, Category = "RPG|Effect")
 	void OnEffectTick();
 
 	//UFUNCTION(BlueprintCallable, Category = "Effects")
@@ -147,7 +196,6 @@ protected:
 	void SelfRemoveEffect();
 private:
 	float currentPeriodTime;
-	float currentDuration;
 	float OriginalConstitution;
 	float AttributeDecrease;
 	float MaxHealthDrain;
