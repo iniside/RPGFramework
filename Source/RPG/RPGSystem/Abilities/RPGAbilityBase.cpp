@@ -7,7 +7,7 @@
 
 
 URPGAbilityBase::URPGAbilityBase(const class FPostConstructInitializeProperties& PCIP)
-	: Super(PCIP)
+: Super(PCIP)
 {
 	isOnCooldown = false;
 	isChanneled = false;
@@ -86,7 +86,7 @@ UWorld* URPGAbilityBase::GetWorld() const
 /*
 	If there is no component on actor then we don't initialize
 	because powers need attributes to work properly.
-*/
+	*/
 void URPGAbilityBase::Initialize(APawn* owner, AController* instigator)
 {
 	AbilityOwner = owner;
@@ -110,16 +110,17 @@ void URPGAbilityBase::Initialize(APawn* owner, AController* instigator)
 			}
 			IsAbilityInitialized = false;
 		}
-		IsAbilityInitialized =  false;
+		IsAbilityInitialized = false;
 	}
-	IsAbilityInitialized =  false;
+	IsAbilityInitialized = false;
 }
 
 void URPGAbilityBase::InputPressed()
 {
 	bool haveRequiredWeapon = false;
 
-	if(!CheckAbilityCost())
+
+	if (!CheckAbilityCost())
 		return;
 
 	//if (CooldownEffectClass)
@@ -186,22 +187,17 @@ void URPGAbilityBase::InputReleased()
 
 bool URPGAbilityBase::CheckAbilityCost()
 {
-	if (AttributeCost.Num() > 0)
+
+	for (FModdableAttributes& cost : AttributeCost)
 	{
-		for (FAbilityCost& abilityCost : AttributeCost)
+		if (OwnerAttributeComp->IsSmaller(cost.AttributeName, cost.ModValue))
 		{
-			if (OwnerAttributeComp->IsSmaller(abilityCost.AttributeName, abilityCost.Cost))
-			{
-				return false;
-			}
+			return false;
 		}
-		for (FAbilityCost& abilityCost : AttributeCost)
-		{
-			OwnerAttributeComp->ModifyAttribute(abilityCost.AttributeName, abilityCost.Cost, EAttributeOperation::Attribute_Subtract);
-		}
-		return true;
 	}
-	return false;
+
+	OwnerAttributeComp->ModifyAttributeList(AttributeCost, EAttributeOperation::Attribute_Subtract);
+	return true;
 }
 
 float URPGAbilityBase::GetCurrentCooldownTime()

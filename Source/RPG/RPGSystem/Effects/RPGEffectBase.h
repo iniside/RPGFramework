@@ -17,6 +17,57 @@ enum EApplicationType
 	Infinite
 };
 
+USTRUCT(BlueprintType, Blueprintable)
+struct FEffectSpec
+{
+	GENERATED_USTRUCT_BODY()
+
+	FEffectSpec()
+	{}
+
+	class URPGAttributeBase* TargetAttribute;
+	
+	AActor* Target;
+
+	AActor* CausedBy;
+	
+	/*
+		In case we want to modify multiple Attributes in single shot.
+	*/
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	//TArray<FModdableAttributes> AttributesToMod;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	TArray<FAttributeSpec> AttributeSpecList;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	TSubclassOf<class URPGEffectBase> EffectClass;
+
+	/*
+		Helper in case we want to modify only single attribute.
+		More convinient than extrating single entry from array.
+	*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FModdableAttributes AttributeToMod;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FAttributeSpec TargetAttributeSpec;
+
+	void SetEffect();
+
+	class URPGEffectBase* Effect;
+};
+
+USTRUCT(BlueprintType, Blueprintable)
+struct FEffectCollection
+{
+	GENERATED_USTRUCT_BODY()
+
+	FEffectCollection() {}
+
+	TArray<FEffectSpec> EffectSpecs;
+};
+
 UENUM()
 enum EEffectDuration
 {
@@ -25,7 +76,7 @@ enum EEffectDuration
 };
 
 UCLASS(Blueprintable, BlueprintType, MinimalAPI)
-class URPGEffectBase : public UObject , public FTickableGameObject
+class URPGEffectBase : public UObject ,public FTickableGameObject
 {
 	GENERATED_UCLASS_BODY()
 
@@ -56,6 +107,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Base Properties")
 	TEnumAsByte<EApplicationType> ApplicationType;
 
+	UPROPERTY(EditAnywhere, Category = "BaseProperties")
+		FName EffectTag;
+
 	/*
 		My Tags;
 	*/
@@ -85,10 +139,11 @@ public:
 		Check if TargetEffect Owns any of RequiredTags.
 	*/
 	bool CanAffectEffect(URPGEffectBase* TargetEffect);
+	
+	UFUNCTION()
+	void ExecuteTick();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
-	UDataTable* EffectData;
-
+	FTimerDynamicDelegate EffectTimerDel;
 protected:
 	/**
 	Target affected by appiled effect
@@ -109,7 +164,16 @@ protected:
 	bool IsEffectActive;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
-		TArray<FModdableAttributes> AttributesToModify;
+	TArray<FModdableAttributes> AttributesToModify;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FModdableAttributes AttributeToModify;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FAttributeSpec TargetAttributeSpec;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+		TArray<FAttributeSpec> AttributeSpecList;
 
 	UPROPERTY(BlueprintReadOnly, Category="Attributes")
 	class URPGAttributeComponent* TargetAttributes;
@@ -121,9 +185,12 @@ public:
 	FORCEINLINE void SetTarget(AActor* target) { Target = target; };
 	FORCEINLINE AActor* GetTarget() { return Target; };
 	FORCEINLINE void SetCauser(AActor* causer) { CausedBy = causer; };
+	FORCEINLINE void SetAttributesToModify(TArray<FModdableAttributes> attributesToMod){ AttributesToModify = attributesToMod; };
+	FORCEINLINE void SetAttributeToModify(FModdableAttributes attributeToMod){ AttributeToModify = attributeToMod; };
+	FORCEINLINE TArray<FModdableAttributes> GetModdableAttributes() { return AttributesToModify; };
+	FORCEINLINE void SetTargetAttributeSpec(FAttributeSpec attributeSpec) { TargetAttributeSpec = attributeSpec; };
+	FORCEINLINE void SetAttributeSpecList(TArray<FAttributeSpec> specList){ AttributeSpecList = specList; };
 	//FORCEINLINE void SetTargetAttributes(URPGAttributeBase* attributes) { CausedBy = causer; };
-
-	
 
 	/** 
 	 Do preinitialization taks. Like assign tags.
@@ -142,7 +209,7 @@ public:
 		Use it instead of static version, for safety and predictable results!
 	*/
 	UFUNCTION(BlueprintCallable, Category = "RPG|Effect")
-		void SpreadEffect(TSubclassOf<class URPGEffectBase> Effect, FVector HitLocation, float Radius, int32 MaxTargets);
+		void SpreadEffect(FEffectSpec EffectSpecs, FVector HitLocation, float Radius, int32 MaxTargets);
 	
 	/*
 		Function remove effects as "frist come, first serve"
@@ -157,12 +224,18 @@ public:
 		ReductionTime - if 0 it will reduce for duration of effect (Default)
 	*/
 	UFUNCTION(BlueprintCallable, Category = "RPG|Effect")
-	void ReduceAttributeForDuration(FName Attribute, float ReductionValue, float ReductionTime = 0);
+		void ReduceAttributeForDuration(FModdableAttributes AttributeMod, float ReductionTime = 0);
 private:
 		float reducedValue;
 public:
 	UFUNCTION(BlueprintCallable, Category = "RPG|Effect")
-		void ModifyTargetAttributes(TArray<FModdableAttributes> AttributesToMod, TEnumAsByte<EAttributeOperation> OperationType);
+		void ModifyTargetAttributes(TArray<FAttributeSpec> AttributesToMod, TEnumAsByte<EAttributeOperation> OperationType);
+
+	UFUNCTION(BlueprintCallable, Category = "RPG|Effect")
+		void ModifyAttribute(TArray<FAttributeSpec> AttributeSpec, TEnumAsByte<EAttributeOperation> OperationType);
+
+	UFUNCTION(BlueprintCallable, Category = "RPG|Effect")
+		FModdableAttributes GetModAttribute(FName AttributeName);
 
 	/*
 		Get Array of effects from target, which Owns any of Required Tags.
@@ -194,7 +267,7 @@ public:
 
 protected:
 	void SelfRemoveEffect();
-private:
+public:
 	float currentPeriodTime;
 	float OriginalConstitution;
 	float AttributeDecrease;

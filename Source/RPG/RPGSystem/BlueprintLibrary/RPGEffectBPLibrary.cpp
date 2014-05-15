@@ -11,9 +11,36 @@ URPGEffectBPLibrary::URPGEffectBPLibrary(const class FPostConstructInitializePro
 }
 
 
-void URPGEffectBPLibrary::ApplyEffect(AActor* target, AActor* causedBy, int32 HowManyToApply, TSubclassOf<class URPGEffectBase> effect)
+//void URPGEffectBPLibrary::ApplyEffect(AActor* target, AActor* causedBy, int32 HowManyToApply, TSubclassOf<class URPGEffectBase> effect)
+//{
+//	if (target && causedBy && effect)
+//	{
+//		TArray<URPGAttributeComponent*> effectMngComps;
+//		URPGAttributeComponent* effectMngrComp = NULL;
+//		target->GetComponents<URPGAttributeComponent>(effectMngComps);
+//		for (URPGAttributeComponent* effectMngComp : effectMngComps)
+//		{
+//			effectMngrComp = effectMngComp;
+//			break;
+//		}
+//
+//		if (effectMngrComp)
+//		{
+//			//URPGEffectBase* effectObj = ConstructObject<URPGEffectBase>(effect);
+//			//effectObj->SetTarget(target);
+//			//effectObj->SetCauser(causedBy);
+//			for (int32 Index = 0; Index < HowManyToApply; Index++)
+//			{
+//				effectMngrComp->ApplyEffect(target, causedBy, effect);
+//			}
+//			//effectObj->AddEffect();
+//		}
+//	}
+//}
+
+void URPGEffectBPLibrary::ApplyEffect(AActor* target, AActor* causedBy, int32 HowManyToApply, FEffectSpec EffectSpec)
 {
-	if (target && causedBy && effect)
+	if (target && causedBy)
 	{
 		TArray<URPGAttributeComponent*> effectMngComps;
 		URPGAttributeComponent* effectMngrComp = NULL;
@@ -26,23 +53,52 @@ void URPGEffectBPLibrary::ApplyEffect(AActor* target, AActor* causedBy, int32 Ho
 
 		if (effectMngrComp)
 		{
-			//URPGEffectBase* effectObj = ConstructObject<URPGEffectBase>(effect);
-			//effectObj->SetTarget(target);
-			//effectObj->SetCauser(causedBy);
+			EffectSpec.Target = target;
+			EffectSpec.CausedBy = causedBy;
 			for (int32 Index = 0; Index < HowManyToApply; Index++)
 			{
-				effectMngrComp->ApplyEffect(target, causedBy, effect);
+				effectMngrComp->ApplyEffect(EffectSpec);
+				//effectMngrComp->ApplyEffect(target, causedBy, effect);
 			}
 			//effectObj->AddEffect();
 		}
 	}
 }
 
-void URPGEffectBPLibrary::ApplyEffectRadial(AActor* CausedBy, FVector HitLocation, float Radius, int32 MaxTargets, TSubclassOf<class URPGEffectBase> effect)
+void URPGEffectBPLibrary::ApplyEffects(AActor* target, AActor* causedBy, int32 HowManyToApply, TArray<FEffectSpec> EffectSpecs)
 {
-	if (CausedBy && effect)
+	if (target && causedBy)
 	{
-		FCollisionQueryParams SphereParams(effect->GetFName(), false, CausedBy);
+		TArray<URPGAttributeComponent*> effectMngComps;
+		URPGAttributeComponent* effectMngrComp = NULL;
+		target->GetComponents<URPGAttributeComponent>(effectMngComps);
+		for (URPGAttributeComponent* effectMngComp : effectMngComps)
+		{
+			effectMngrComp = effectMngComp;
+			break;
+		}
+
+		if (effectMngrComp)
+		{
+			for (int32 Index = 0; Index < HowManyToApply; Index++)
+			{
+				for (FEffectSpec& spec : EffectSpecs)
+				{
+					spec.Target = target;
+					spec.CausedBy = causedBy;
+					effectMngrComp->ApplyEffect(spec);
+				}
+			}
+			//effectObj->AddEffect();
+		}
+	}
+}
+
+void URPGEffectBPLibrary::ApplyEffectRadial(AActor* CausedBy, FVector HitLocation, float Radius, int32 MaxTargets, FEffectSpec EffectSpec)
+{
+	if (CausedBy)
+	{
+		FCollisionQueryParams SphereParams(EffectSpec.EffectClass->GetFName(), false, CausedBy);
 		UWorld* World = GEngine->GetWorldFromContextObject(CausedBy);
 		//make sure we have world
 		if (!World)
@@ -52,7 +108,7 @@ void URPGEffectBPLibrary::ApplyEffectRadial(AActor* CausedBy, FVector HitLocatio
 		World->OverlapMulti(Overlaps, HitLocation ,FQuat::Identity, FCollisionShape::MakeSphere(Radius), SphereParams, FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllDynamicObjects));
 		DrawDebugSphere(World, HitLocation, Radius, 32, FColor::Black, true, 5.0f);
 		FAttributeRadialEffectEvent RadialEffect;
-		RadialEffect.EffectClass = effect;
+		RadialEffect.EffectClass = EffectSpec.EffectClass;
 		if (Overlaps.Num() >= 0)
 		{
 			//this is going to be very ugly, change it with next version of stable engine!
@@ -75,7 +131,9 @@ void URPGEffectBPLibrary::ApplyEffectRadial(AActor* CausedBy, FVector HitLocatio
 
 					if (HitActorAttribute)
 					{
-						HitActorAttribute->ApplyEffect(HitActor, CausedBy, effect);
+						EffectSpec.Target = HitActor;
+						EffectSpec.CausedBy = CausedBy;
+						HitActorAttribute->ApplyEffect(EffectSpec);
 					}
 				}
 				

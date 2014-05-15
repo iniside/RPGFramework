@@ -3,6 +3,7 @@
 #pragma once
 #include "Object.h"
 #include "GameplayTagContainer.h"
+#include "../Effects/RPGEffectBase.h"
 #include "RPGAbilityBase.generated.h"
 
 /**
@@ -43,18 +44,6 @@ enum ECastType
 	Casted_Charged,
 	Channeled,
 	Instant
-};
-
-USTRUCT()
-struct FAbilityCost
-{
-	GENERATED_USTRUCT_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "Ability Cost")
-	FName AttributeName;
-
-	UPROPERTY(EditAnywhere, Category = "Ability Cost")
-	float Cost;
 };
 
 UCLASS(BlueprintType, Blueprintable)
@@ -108,11 +97,13 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Ability Properties")
 		float AbilityCooldownTime;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability Data")
-		UDataTable* AbilityDataTable;
-
 	UPROPERTY(EditAnywhere, Category = "Ability Properties")
-		TArray<FAbilityCost> AttributeCost;
+		TArray<FModdableAttributes> AttributeCost;
+
+
+
+	//class TWeakObjectPtr<class URPGEffectBase> AbilityCost;
+
 private:
 	bool CheckAbilityCost();
 public:

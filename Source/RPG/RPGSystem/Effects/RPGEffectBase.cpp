@@ -4,6 +4,21 @@
 #include "../Components/RPGAttributeComponent.h"
 #include "RPGEffectBase.h"
 
+void FEffectSpec::SetEffect()
+{
+	if (EffectClass)
+	{
+		Effect = ConstructObject<URPGEffectBase>(EffectClass);
+		if (Effect)
+		{
+			Effect->SetTarget(Target);
+			Effect->SetCauser(CausedBy);
+			Effect->SetAttributeToModify(AttributeToMod);
+			Effect->SetTargetAttributeSpec(TargetAttributeSpec);
+			Effect->SetAttributeSpecList(AttributeSpecList);
+		}
+	}
+}
 
 URPGEffectBase::URPGEffectBase(const class FPostConstructInitializeProperties& PCIP)
 	: Super(PCIP)
@@ -14,23 +29,24 @@ void URPGEffectBase::Tick( float DeltaTime)
 {
 	//Super::Tick(DeltaTime);
 
-	currentPeriodTime += DeltaTime;
-	if (currentPeriodTime >= PeriodLenght)
-	{
-		OnEffectPeriod();
-		currentPeriodTime = 0;
-	}
-	if (ApplicationType != EApplicationType::Infinite)
-	{
-		CurrentDuration += DeltaTime;
-		if (CurrentDuration >= TotalDuration)
-		{
-			CurrentDuration = 0;
-			//OnEffectEnd();
-			SelfRemoveEffect();
-		}
-	}
-	OnEffectTick(); //this will tick every frame.
+	//currentPeriodTime += DeltaTime;
+	//if (currentPeriodTime >= PeriodLenght)
+	//{
+	//	OnEffectPeriod();
+	//	currentPeriodTime = 0;
+	//}
+	//if (ApplicationType != EApplicationType::Infinite)
+	//{
+	//	CurrentDuration += DeltaTime;
+	//	if (CurrentDuration >= TotalDuration)
+	//	{
+	//		CurrentDuration = 0;
+	//		//Deinitialize();
+	//		//OnEffectEnd();
+	//		SelfRemoveEffect();
+	//	}
+	//}
+	//OnEffectTick(); //this will tick every frame.
 }
 bool URPGEffectBase::IsTickable() const
 {
@@ -58,6 +74,11 @@ bool URPGEffectBase::IsTickable() const
 TStatId URPGEffectBase::GetStatId() const
 {
 	return this->GetStatID();
+}
+
+void URPGEffectBase::ExecuteTick()
+{
+	OnEffectPeriod();
 }
 
 void URPGEffectBase::PreInitialize()
@@ -95,10 +116,13 @@ bool URPGEffectBase::Initialize()
 			//targetAttributeComponent = effectMngrComp;
 		}
 		TotalDuration = PeriodLenght * PeriodsCount;
-		OnEffectAppiled();
+		
 		IsEffectActive = true;
 		IsEffectAppiled = true;
+		OwnedTags.AddTag(EffectTag);
+		//EffectTimerDel.BindDynamic(this, &URPGEffectBase::ExecuteTick);
 		OnEffectActivation.Broadcast(this->GetClass(), IsEffectActive);
+		OnEffectAppiled();
 		return true;
 	}
 	return false;
@@ -108,7 +132,7 @@ void URPGEffectBase::Deinitialize()
 {
 	OnEffectEnd();
 	IsEffectActive = false;
-	OnEffectDeactivation.Broadcast(this->GetClass(), IsEffectActive);
+	//OnEffectDeactivation.Broadcast(this->GetClass(), IsEffectActive);
 	PeriodLenght = 0;
 	TotalDuration = 0;
 }
@@ -135,19 +159,21 @@ bool URPGEffectBase::CanAffectEffect(URPGEffectBase* TargetEffect)
 	return RequiredTags.HasAnyTag(TargetEffect->OwnedTags);
 }
 
-void URPGEffectBase::SpreadEffect(TSubclassOf<class URPGEffectBase> Effect, FVector HitLocation, float Radius, int32 MaxTargets)
+void URPGEffectBase::SpreadEffect(FEffectSpec EffectSpecs, FVector HitLocation, float Radius, int32 MaxTargets)
 {
-	if ((!GetWorld()) && (!Effect))
+	if ((!GetWorld()))
 		return;
 
-	FCollisionQueryParams SphereParams(Effect->GetFName(), false, CausedBy);
+	//EffectSpec.SetEffect();
+
+	FCollisionQueryParams SphereParams(this->GetFName(), false, CausedBy);
 	//make sure we have world
 
 	TArray<FOverlapResult> Overlaps;
 	GetWorld()->OverlapMulti(Overlaps, HitLocation, FQuat::Identity, FCollisionShape::MakeSphere(Radius), SphereParams, FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllDynamicObjects));
-	DrawDebugSphere(GetWorld(), HitLocation, Radius, 32, FColor::Black, true, 5.0f);
-	FAttributeRadialEffectEvent RadialEffect;
-	RadialEffect.EffectClass = Effect;
+	//DrawDebugSphere(GetWorld(), HitLocation, Radius, 32, FColor::Black, true, 5.0f);
+	//FAttributeRadialEffectEvent RadialEffect;
+	//RadialEffect.EffectClass = Effect;
 	if (Overlaps.Num() > 0)
 	{
 		//this is going to be very ugly, change it with next version of stable engine!
@@ -170,7 +196,10 @@ void URPGEffectBase::SpreadEffect(TSubclassOf<class URPGEffectBase> Effect, FVec
 
 				if (HitActorAttribute)
 				{
-					HitActorAttribute->ApplyEffect(HitActor, CausedBy, Effect);
+					EffectSpecs.Target = HitActor;
+					EffectSpecs.CausedBy = CausedBy;
+					//EffectSpecs.SetEffect();
+					HitActorAttribute->ApplyEffect(EffectSpecs);
 				}
 			}
 
@@ -204,21 +233,63 @@ int32 URPGEffectBase::RemoveEffect(FName Tag, int32 Count, class URPGAttributeCo
 	return effectsRemoved;
 }
 
-void URPGEffectBase::ReduceAttributeForDuration(FName Attribute, float ReductionValue, float ReductionTime)
+void URPGEffectBase::ReduceAttributeForDuration(FModdableAttributes AttributeMod, float ReductionTime)
 {
 	if (TargetAttributes)
 	{
-		reducedValue = ReductionValue;
-		TargetAttributes->ModifyAttribute(Attribute, ReductionValue, EAttributeOperation::Attribute_Subtract);
+		reducedValue = AttributeMod.ModValue;
+		TargetAttributes->ModifyAttribute(AttributeMod, EAttributeOperation::Attribute_Subtract);
 	}
 }
 
-void URPGEffectBase::ModifyTargetAttributes(TArray<FModdableAttributes> AttributesToMod, TEnumAsByte<EAttributeOperation> OperationType)
+void URPGEffectBase::ModifyTargetAttributes(TArray<FAttributeSpec> AttributesToMod, TEnumAsByte<EAttributeOperation> OperationType)
 {
-	if (TargetAttributes)
+	if (AttributesToModify.Num() > 0)
 	{
-		TargetAttributes->ModifyAttributeList(AttributesToMod, OperationType);
 	}
+
+	for (FAttributeSpec& spec : AttributesToMod)
+	{
+		if (OwnedTags.HasTag(spec.TargetTag))
+		{
+			if (TargetAttributes)
+			{
+				TargetAttributes->ModifyAttributeList(spec.AttributeModList, OperationType);
+			}
+		}
+	}
+}
+
+void URPGEffectBase::ModifyAttribute(TArray<FAttributeSpec> AttributeSpec, TEnumAsByte<EAttributeOperation> OperationType)
+{
+	for (FAttributeSpec& spec : AttributeSpec)
+	{
+		if (OwnedTags.HasTag(spec.TargetTag))
+		{
+			if (TargetAttributes)
+			{
+				TargetAttributes->ModifyAttribute(spec.AttributeMod, OperationType);
+			}
+		}
+	}
+}
+
+FModdableAttributes URPGEffectBase::GetModAttribute(FName AttributeName)
+{
+	FModdableAttributes tempAtt;
+	if (AttributesToModify.Num())
+	{
+		for (int Index = 0; Index < AttributesToModify.Num(); Index++)
+		{
+			if (AttributesToModify[Index].AttributeName == AttributeName)
+			{
+				tempAtt.AttributeName = AttributesToModify[Index].AttributeName;
+				tempAtt.ModValue = AttributesToModify[Index].ModValue;
+				return tempAtt;
+			}
+		}
+	}
+	return tempAtt;
 }
 
 TArray < TWeakObjectPtr<URPGEffectBase> > URPGEffectBase::GetModificableEffects()

@@ -15,6 +15,7 @@ URPGAttributeComponent::URPGAttributeComponent(const class FPostConstructInitial
 void URPGAttributeComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	TickEffects(DeltaTime);
 }
 
 void URPGAttributeComponent::InitializeComponent()
@@ -24,6 +25,33 @@ void URPGAttributeComponent::InitializeComponent()
 void URPGAttributeComponent::OnRegister()
 {
 	Super::OnRegister();
+}
+
+void URPGAttributeComponent::TickEffects(float DeltaTime)
+{
+	//GetWorld()->GetTimerManager().
+	//float CurrentTime;// = GetCurrentTime();
+	if (EffectsList.Num() <= 0)
+		return;
+
+	for (auto It = EffectsList.CreateIterator(); It; ++It)
+	{
+		URPGEffectBase* effect = EffectsList[It.GetIndex()];
+
+		effect->currentPeriodTime += DeltaTime;
+		effect->CurrentDuration += DeltaTime;
+		if (effect->CurrentDuration >= effect->TotalDuration)
+		{
+			effect->CurrentDuration = 0;
+			RemoveEffect(effect);
+			break;
+		}
+		if (effect->currentPeriodTime >= effect->PeriodLenght)
+		{
+			effect->currentPeriodTime = 0;
+			effect->ExecuteTick();
+		}
+	}
 }
 
 //void URPGAttributeComponent::GetOrCreateAttribute()
@@ -38,28 +66,58 @@ void URPGAttributeComponent::OnRegister()
 //}
 
 
-void URPGAttributeComponent::ApplyEffect(AActor* Target, AActor* CausedBy, TSubclassOf<class URPGEffectBase> Effect)
-{
-	URPGEffectBase* effectTemp = NULL;
-	effectTemp = ConstructObject<URPGEffectBase>(Effect);
-	if (effectTemp)
-	{
-		effectTemp->SetTarget(Target);
-		effectTemp->SetCauser(CausedBy);
-		effectTemp->PreInitialize();
+//void URPGAttributeComponent::ApplyEffect(AActor* Target, AActor* CausedBy, TSubclassOf<class URPGEffectBase> Effect)
+//{
+//	URPGEffectBase* effectTemp = NULL;
+//	effectTemp = ConstructObject<URPGEffectBase>(Effect);
+//	if (effectTemp)
+//	{
+//		effectTemp->SetTarget(Target);
+//		effectTemp->SetCauser(CausedBy);
+//		effectTemp->PreInitialize();
+//
+//		if (effectTemp->ApplicationType == EApplicationType::InstantApplication)
+//		{
+//			OnRecivedEffect.Broadcast(Target, Effect);
+//			effectTemp->Deinitialize();
+//		}
+//		if (effectTemp->Initialize())
+//		{
+//			if (effectTemp->ApplicationType == EApplicationType::Periodic)
+//			{
+//				//if (CausedBy != GetOwner())
+//				OnRecivedEffect.Broadcast(Target, Effect);
+//				SetPeriodicEffect(effectTemp);
+//			}
+//		}
+//	}
+//}
 
-		if (effectTemp->ApplicationType == EApplicationType::InstantApplication)
+void URPGAttributeComponent::ApplyEffect(struct FEffectSpec& EffectSpec)
+{
+	EffectSpec.SetEffect();
+	//effectTemp = ConstructObject<URPGEffectBase>(Effect);
+	if (EffectSpec.Effect)
+	{
+		//EffectSpec.Effect->SetTarget(Target);
+		//EffectSpec.Effect->SetCauser(CausedBy);
+		EffectSpec.Effect->PreInitialize();
+
+		if (EffectSpec.Effect->ApplicationType == EApplicationType::InstantApplication)
 		{
-			OnRecivedEffect.Broadcast(Target, Effect);
-			effectTemp->Deinitialize();
+			EffectSpec.Effect->Initialize();
+			OnRecivedEffect.Broadcast(EffectSpec.Target, EffectSpec.Effect->GetClass());
+			EffectSpec.Effect->Deinitialize();
+			return;
 		}
-		if (effectTemp->Initialize())
+		if (EffectSpec.Effect->Initialize())
 		{
-			if (effectTemp->ApplicationType == EApplicationType::Periodic)
+			if (EffectSpec.Effect->ApplicationType == EApplicationType::Periodic)
 			{
 				//if (CausedBy != GetOwner())
-				OnRecivedEffect.Broadcast(Target, Effect);
-				SetPeriodicEffect(effectTemp);
+				OnRecivedEffect.Broadcast(EffectSpec.Target, EffectSpec.Effect->GetClass());
+				SetPeriodicEffect(EffectSpec.Effect);
+				return;
 			}
 		}
 	}
@@ -109,6 +167,11 @@ void URPGAttributeComponent::SetPeriodicEffect(class URPGEffectBase* newEffect)
 			EffectsList.Add(newEffect);
 		}
 	}
+
+
+
+	//GetWorld()->GetTimerManager().SetTimer(newEffect->EffectTimerDel, newEffect->PeriodLenght, true);
+
 	EffectsList.Add(newEffect);
 }
 void URPGAttributeComponent::RemoveEffect(class URPGEffectBase* effectToRemove)
@@ -167,19 +230,26 @@ UProperty* URPGAttributeComponent::GetAttribute(FName AtributeName, TSubclassOf<
 
 float URPGAttributeComponent::GetNumericValue(FName AttributeName)
 {
-	UNumericProperty* NumericProperty = CastChecked<UNumericProperty>(GetAttribute(AttributeName, this->GetClass()));
-	void* ValuePtr = NumericProperty->ContainerPtrToValuePtr<void>(this);
-	float tempVal = 0;
-	tempVal = NumericProperty->GetFloatingPointPropertyValue(ValuePtr);
-	return tempVal;
+	if (!AttributeName.IsNone())
+	{
+		UNumericProperty* NumericProperty = CastChecked<UNumericProperty>(GetAttribute(AttributeName, this->GetClass()));
+		void* ValuePtr = NumericProperty->ContainerPtrToValuePtr<void>(this);
+		float tempVal = 0;
+		tempVal = NumericProperty->GetFloatingPointPropertyValue(ValuePtr);
+		return tempVal;
+	}
+	return 0;
 }
 
 void URPGAttributeComponent::SetNumericValue(float value, FName AttributeName)
 {
-	UNumericProperty* NumericProperty = CastChecked<UNumericProperty>(GetAttribute(AttributeName, this->GetClass()));
-	void* ValuePtr = NumericProperty->ContainerPtrToValuePtr<void>(this);
-	NumericProperty->SetFloatingPointPropertyValue(ValuePtr, value);
-	OnAttributeChange.Broadcast(AttributeName, value);
+	if (!AttributeName.IsNone())
+	{
+		UNumericProperty* NumericProperty = CastChecked<UNumericProperty>(GetAttribute(AttributeName, this->GetClass()));
+		void* ValuePtr = NumericProperty->ContainerPtrToValuePtr<void>(this);
+		NumericProperty->SetFloatingPointPropertyValue(ValuePtr, value);
+		OnAttributeChange.Broadcast(AttributeName, value);
+	}
 }
 
 bool URPGAttributeComponent::IsSmaller(FName AttributeName, float SmallerThan)
@@ -210,32 +280,32 @@ bool URPGAttributeComponent::Compare(FName AttributeA, FName AttributeB)
 	return false;
 }
 
-void URPGAttributeComponent::ModifyAttribute(FName AttributeName, float Value, TEnumAsByte<EAttributeOperation> OperationType)
+void URPGAttributeComponent::ModifyAttribute(FModdableAttributes AttributeMod, TEnumAsByte<EAttributeOperation> OperationType)
 {
 	float AttributeValue = 0;
-	AttributeValue = GetNumericValue(AttributeName);
+	AttributeValue = GetNumericValue(AttributeMod.AttributeName);
 
 	switch (OperationType)
 	{
 	case EAttributeOperation::Attribute_Add:
-		AttributeValue += Value;
-		SetNumericValue(AttributeValue, AttributeName);
+		AttributeValue += AttributeMod.ModValue;
+		SetNumericValue(AttributeValue, AttributeMod.AttributeName);
 		return;
 	case EAttributeOperation::Attribute_Subtract:
-		AttributeValue -= Value;
-		SetNumericValue(AttributeValue, AttributeName);
+		AttributeValue -= AttributeMod.ModValue;
+		SetNumericValue(AttributeValue, AttributeMod.AttributeName);
 		return;
 	case EAttributeOperation::Attribute_Multiply:
-		AttributeValue *= Value;
-		SetNumericValue(AttributeValue, AttributeName);
+		AttributeValue *= AttributeMod.ModValue;
+		SetNumericValue(AttributeValue, AttributeMod.AttributeName);
 		return;
 	case EAttributeOperation::Attribute_Divide:
-		AttributeValue = (AttributeValue / Value);
-		SetNumericValue(AttributeValue, AttributeName);
+		AttributeValue = (AttributeValue / AttributeMod.ModValue);
+		SetNumericValue(AttributeValue, AttributeMod.AttributeName);
 		return;
 	case EAttributeOperation::Attribute_Set:
-		AttributeValue = Value;
-		SetNumericValue(AttributeValue, AttributeName);
+		AttributeValue = AttributeMod.ModValue;
+		SetNumericValue(AttributeValue, AttributeMod.AttributeName);
 		return;
 	default:
 		return;

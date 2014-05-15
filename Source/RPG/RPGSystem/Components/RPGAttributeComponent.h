@@ -108,7 +108,9 @@ public:
 
 	void RemoveEffect(class URPGEffectBase* effectToRemove);
 
-	virtual void ApplyEffect(AActor* Target, AActor* CausedBy, TSubclassOf<class URPGEffectBase> Effect);
+	//virtual void ApplyEffect(AActor* Target, AActor* CausedBy, TSubclassOf<class URPGEffectBase> Effect);
+
+	virtual void ApplyEffect(struct FEffectSpec& EffectSpec);
 
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
 		UProperty* GetAttribute(FName AtributeName, TSubclassOf<URPGAttributeComponent> AttributeClass);
@@ -132,7 +134,7 @@ public:
 		bool Compare(FName AttributeA, FName AttributeB);
 
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
-		void ModifyAttribute(FName AttributeName, float Value, TEnumAsByte<EAttributeOperation> OperationType);
+		void ModifyAttribute(FModdableAttributes AttributeMod, TEnumAsByte<EAttributeOperation> OperationType);
 
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
 		void ModifyAttributeList(TArray<FModdableAttributes> Attributes, TEnumAsByte<EAttributeOperation> OperationType);
@@ -146,5 +148,8 @@ public:
 protected:
 	void DestroyEffect(class URPGEffectBase* EffectToDestroy);
 	void SetPeriodicEffect(class URPGEffectBase* newEffect);
+
+	void TickEffects(float DeltaTime);
+
 	//void GetOrCreateAttribute();
 };
