@@ -13,7 +13,7 @@ public class RPG : ModuleRules
         );
         PrivateIncludePaths.AddRange(
         new string[] {
-					    "Runtime/GameplayTags/Private",
+					   // "Runtime/GameplayTags/Private",
 					    // ... add other private include paths required here ...
 				    }
         );
@@ -22,15 +22,19 @@ public class RPG : ModuleRules
             "Core", 
             "CoreUObject", 
             "Engine", 
-            "InputCore", 
-            "GameplayTags",
+            "InputCore",
+            "UnrealEd",
+            "GameplayTags"
         });
         
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate" });
 
         DynamicallyLoadedModuleNames.Add("EditorStyle");
 
-        PrivateIncludePathModuleNames.Add("EditorStyle");
+        PrivateIncludePathModuleNames.AddRange(new string[]{
+            "EditorStyle",
+            "GameplayTags"
+    });
 
         if (UEBuildConfiguration.bBuildEditor == true)
         {

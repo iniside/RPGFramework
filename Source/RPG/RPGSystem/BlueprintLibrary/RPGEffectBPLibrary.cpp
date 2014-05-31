@@ -1,6 +1,9 @@
 #pragma once
 #include "RPG.h"
 #include "../Effects/RPGEffectBase.h"
+#include "../Effects/RPGEffectInstant.h"
+#include "../Effects/RPGEffectPeriodic.h"
+#include "../Effects/RPGEffectModifier.h"
 #include "../Components/RPGAttributeComponent.h"
 #include "RPGEffectBPLibrary.h"
 
@@ -10,175 +13,173 @@ URPGEffectBPLibrary::URPGEffectBPLibrary(const class FPostConstructInitializePro
 	
 }
 
-
-//void URPGEffectBPLibrary::ApplyEffect(AActor* target, AActor* causedBy, int32 HowManyToApply, TSubclassOf<class URPGEffectBase> effect)
-//{
-//	if (target && causedBy && effect)
-//	{
-//		TArray<URPGAttributeComponent*> effectMngComps;
-//		URPGAttributeComponent* effectMngrComp = NULL;
-//		target->GetComponents<URPGAttributeComponent>(effectMngComps);
-//		for (URPGAttributeComponent* effectMngComp : effectMngComps)
-//		{
-//			effectMngrComp = effectMngComp;
-//			break;
-//		}
-//
-//		if (effectMngrComp)
-//		{
-//			//URPGEffectBase* effectObj = ConstructObject<URPGEffectBase>(effect);
-//			//effectObj->SetTarget(target);
-//			//effectObj->SetCauser(causedBy);
-//			for (int32 Index = 0; Index < HowManyToApply; Index++)
-//			{
-//				effectMngrComp->ApplyEffect(target, causedBy, effect);
-//			}
-//			//effectObj->AddEffect();
-//		}
-//	}
-//}
-
-void URPGEffectBPLibrary::ApplyEffect(AActor* target, AActor* causedBy, int32 HowManyToApply, FEffectSpec EffectSpec)
+URPGEffectInstant* URPGEffectBPLibrary::CreateInstantEffect(AActor* EffectTarget, AActor* EffectCausedBy, TSubclassOf<class URPGEffectInstant> InstantEffectIn, TArray<FModdableAttributes> ModAttributesIn, FName AttributeName, float AttributeValue)
 {
-	if (target && causedBy)
+	TWeakObjectPtr<URPGAttributeComponent> attrComp = EffectTarget->FindComponentByClass<URPGAttributeComponent>();
+
+	if (!attrComp.IsValid())
+		return NULL;
+	
+	TWeakObjectPtr<URPGEffectInstant> tempEff = ConstructObject<URPGEffectInstant>(InstantEffectIn);
+
+	tempEff->SetTarget(EffectTarget);
+	tempEff->SetCauser(EffectCausedBy);
+	tempEff->AttributesToChange = ModAttributesIn;
+	tempEff->AttributeName = AttributeName;
+	tempEff->AttributeValue = AttributeValue;
+	return tempEff.Get();
+}
+
+URPGEffectPeriodic* URPGEffectBPLibrary::CreatePeriodicEffect(AActor* EffectTarget, AActor* EffectCausedBy, TSubclassOf<class URPGEffectPeriodic> PeriodicEffectIn, float PeriodLenght, float PeriodCount)
+{
+	TWeakObjectPtr<URPGAttributeComponent> attrComp = EffectTarget->FindComponentByClass<URPGAttributeComponent>();
+
+	if (!attrComp.IsValid())
+		return NULL;
+
+	TWeakObjectPtr<URPGEffectPeriodic> tempEff = ConstructObject<URPGEffectPeriodic>(PeriodicEffectIn);
+
+	tempEff->SetTarget(EffectTarget);
+	tempEff->SetCauser(EffectCausedBy);
+	tempEff->SetPeriodCount(PeriodCount);
+	tempEff->SetPeriodLenght(PeriodLenght);
+	return tempEff.Get();
+}
+
+URPGEffectModifier* URPGEffectBPLibrary::CreateModifierEffect(TSubclassOf<class URPGEffectModifier> EffectIn)
+{
+	TWeakObjectPtr<URPGEffectModifier> tempEff = ConstructObject<URPGEffectModifier>(EffectIn);
+
+	return tempEff.Get();
+}
+
+void URPGEffectBPLibrary::Applyffect(class URPGEffectInstant* EffectIn)
+{
+	if (!EffectIn)
+		return;
+
+	EffectIn->PreInitialize();
+	EffectIn->Initialize();
+}
+
+void URPGEffectBPLibrary::ApplyPeriodicEffect(class URPGEffectPeriodic* EffectIn, TArray<URPGEffectBase*> EffectsToApply)
+{
+	TWeakObjectPtr<URPGAttributeComponent> attrComp = EffectIn->GetTarget()->FindComponentByClass<URPGAttributeComponent>();
+	if (!attrComp.IsValid())
+		return;
+
+	EffectIn->EffectsToApply = EffectsToApply;
+	EffectIn->PreInitialize();
+	EffectIn->Initialize();
+	
+	attrComp->ApplyPeriodicEffect(EffectIn);
+}
+
+URPGEffectInstant* URPGEffectBPLibrary::ModifyEffect(class URPGEffectModifier* ModifierEffect, class URPGEffectInstant* EffectToMod)
+{
+	if (!ModifierEffect && !EffectToMod)
+		return EffectToMod;
+
+	ModifierEffect->AttributeValue = EffectToMod->AttributeValue;
+	
+	ModifierEffect->PreInitialize();
+	ModifierEffect->Initialize();
+
+	EffectToMod->AttributeValue = ModifierEffect->AttributeValue;
+
+	return EffectToMod;
+}
+
+void URPGEffectBPLibrary::ApplyInstantEffects(AActor* EffectTarget, AActor* EffectCausedBy, TArray<FEffectInstant> InstantEffectSpecs, TArray<FAttributeSpec> AttributeSpecs)
+{
+	if (!EffectTarget && !EffectCausedBy)
+		return;
+
+	URPGAttributeComponent* attrComp = EffectTarget->FindComponentByClass<URPGAttributeComponent>();
+
+	if (!attrComp)
+		return;
+
+	for (FEffectInstant& instEff : InstantEffectSpecs)
 	{
-		TArray<URPGAttributeComponent*> effectMngComps;
-		URPGAttributeComponent* effectMngrComp = NULL;
-		target->GetComponents<URPGAttributeComponent>(effectMngComps);
-		for (URPGAttributeComponent* effectMngComp : effectMngComps)
+		if (instEff.DoesCauserIsTarget)
 		{
-			effectMngrComp = effectMngComp;
-			break;
+			instEff.InitializeInstantEffect(EffectCausedBy, EffectCausedBy);
+		}
+		else
+		{
+			instEff.InitializeInstantEffect(EffectTarget, EffectCausedBy);
 		}
 
-		if (effectMngrComp)
+		for (FAttributeSpec& attrSpec : AttributeSpecs)
 		{
-			EffectSpec.Target = target;
-			EffectSpec.CausedBy = causedBy;
-			for (int32 Index = 0; Index < HowManyToApply; Index++)
+			if (instEff.EffectInstant->OwnedTags.HasAnyTag(attrSpec.RequiredTags))
 			{
-				effectMngrComp->ApplyEffect(EffectSpec);
-				//effectMngrComp->ApplyEffect(target, causedBy, effect);
+				instEff.EffectInstant->AttributeSpec = attrSpec;
 			}
-			//effectObj->AddEffect();
 		}
+		attrComp->ApplyInstantEffect(instEff);
 	}
 }
 
-void URPGEffectBPLibrary::ApplyEffects(AActor* target, AActor* causedBy, int32 HowManyToApply, TArray<FEffectSpec> EffectSpecs)
+void URPGEffectBPLibrary::ApplyEffectPeriodc(AActor* target, AActor* causedBy, int32 HowManyToApply, TSubclassOf<class URPGEffectPeriodic> PeriodicEffectIn)
 {
 	if (target && causedBy)
 	{
-		TArray<URPGAttributeComponent*> effectMngComps;
-		URPGAttributeComponent* effectMngrComp = NULL;
-		target->GetComponents<URPGAttributeComponent>(effectMngComps);
-		for (URPGAttributeComponent* effectMngComp : effectMngComps)
-		{
-			effectMngrComp = effectMngComp;
-			break;
-		}
+		URPGAttributeComponent* attrComp = target->FindComponentByClass<URPGAttributeComponent>();
+		TWeakObjectPtr<URPGEffectPeriodic> tempEff = ConstructObject<URPGEffectPeriodic>(PeriodicEffectIn);
+		if (!attrComp)
+			return;
 
-		if (effectMngrComp)
-		{
-			for (int32 Index = 0; Index < HowManyToApply; Index++)
-			{
-				for (FEffectSpec& spec : EffectSpecs)
-				{
-					spec.Target = target;
-					spec.CausedBy = causedBy;
-					effectMngrComp->ApplyEffect(spec);
-				}
-			}
-			//effectObj->AddEffect();
-		}
+		tempEff->SetTarget(target);
+		tempEff->SetCauser(causedBy);
+
+		//EffectSpec.InitializePeriodicEffect(target, causedBy);
+			
+			//EffectSpec.EffectPeriod->CacheInstantEffects(instEffect);
+		
+		tempEff->PreInitialize();
+		tempEff->Initialize();
+
+		attrComp->ApplyPeriodicEffect(tempEff.Get());
+	}
+}
+
+void URPGEffectBPLibrary::ApplyDamage(AActor* Target, AActor* CausedBy, float DamageAmount, FName AttributeName)
+{
+	TWeakObjectPtr<URPGAttributeComponent> attrComp = Target->FindComponentByClass<URPGAttributeComponent>();
+
+	if (!attrComp.IsValid())
+		return;
+
+	attrComp->TakeDamage(DamageAmount, AttributeName, CausedBy);
+}
+
+void URPGEffectBPLibrary::LoopTestFunction(TSubclassOf<class URPGEffectBase> EffectIn)
+{
+	URPGEffectBase* effectTemp;
+	for (int i = 0; i < 100000; i++)
+	{
+		effectTemp = ConstructObject<URPGEffectBase>(EffectIn);
 	}
 }
 
 void URPGEffectBPLibrary::ApplyEffectRadial(AActor* CausedBy, FVector HitLocation, float Radius, int32 MaxTargets, FEffectSpec EffectSpec)
 {
-	if (CausedBy)
-	{
-		FCollisionQueryParams SphereParams(EffectSpec.EffectClass->GetFName(), false, CausedBy);
-		UWorld* World = GEngine->GetWorldFromContextObject(CausedBy);
-		//make sure we have world
-		if (!World)
-			return;
-
-		TArray<FOverlapResult> Overlaps;
-		World->OverlapMulti(Overlaps, HitLocation ,FQuat::Identity, FCollisionShape::MakeSphere(Radius), SphereParams, FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllDynamicObjects));
-		DrawDebugSphere(World, HitLocation, Radius, 32, FColor::Black, true, 5.0f);
-		FAttributeRadialEffectEvent RadialEffect;
-		RadialEffect.EffectClass = EffectSpec.EffectClass;
-		if (Overlaps.Num() >= 0)
-		{
-			//this is going to be very ugly, change it with next version of stable engine!
-			int32 TargetCounter = 0;
-			for (auto It = Overlaps.CreateIterator(); It; ++It)
-			{
-				TargetCounter++;
-				if (MaxTargets > TargetCounter)
-				{
-					AActor* HitActor = Overlaps[It.GetIndex()].GetActor();
-
-					TArray<URPGAttributeComponent*> HitActorAttributes;
-					URPGAttributeComponent* HitActorAttribute = NULL;
-					HitActor->GetComponents<URPGAttributeComponent>(HitActorAttributes);
-					for (URPGAttributeComponent* HitAttr : HitActorAttributes)
-					{
-						HitActorAttribute = HitAttr;
-						break;
-					}
-
-					if (HitActorAttribute)
-					{
-						EffectSpec.Target = HitActor;
-						EffectSpec.CausedBy = CausedBy;
-						HitActorAttribute->ApplyEffect(EffectSpec);
-					}
-				}
-				
-			}
-		}
-	}
+	
 }
 
 void URPGEffectBPLibrary::ApplyEffectInLine(AActor* CausedBy, FVector StartLocation, float Lenght, TSubclassOf<class URPGEffectBase> Effect)
 {
-	if (CausedBy && Effect)
-	{
-		FCollisionQueryParams BoxParams(Effect->GetFName(), false, CausedBy);
-		UWorld* World = GEngine->GetWorldFromContextObject(CausedBy);
-		//make sure we have world
-		if (!World)
-			return;
 
-		FVector BoxSize = FVector(Lenght, 100.0f, 100.0f);
-		FCollisionShape CollisionShapre = FCollisionShape::MakeBox(BoxSize);
-		TArray<FOverlapResult> Overlaps;
-		//World->OverlapMulti(Overlaps, HitLocation.Location, FQuat::Identity, FCollisionShape::MakeSphere(Radius), SphereParams, FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllDynamicObjects));
-		DrawDebugBox(World, StartLocation, BoxSize, FColor::Red, true, 10.0f);
-		//if (Overlaps.Num() > 0)
-		//{
-		//	//this is going to be very ugly, change it with next version of stable engine!
-		//	for (auto It = Overlaps.CreateIterator(); It; ++It)
-		//	{
-		//		AActor* HitActor = Overlaps[It.GetIndex()].GetActor();
+}
 
-		//		TArray<URPGAttributeComponent*> HitActorAttributes;
-		//		URPGAttributeComponent* HitActorAttribute = NULL;
-		//		HitActor->GetComponents<URPGAttributeComponent>(HitActorAttributes);
-		//		for (URPGAttributeComponent* HitAttr : HitActorAttributes)
-		//		{
-		//			HitActorAttribute = HitAttr;
-		//			break;
-		//		}
+void URPGEffectBPLibrary::ModifyIncomingEffect(FGameplayTagContainer IncomingEffect, FGameplayTagContainer ModifierEffect)
+{
+	//if (!IncomingEffect.EffectInstant.IsValid() && !ModifierEffect.EffectInstant.IsValid())
+	//	return IncomingEffect;
 
-		//		if (HitActorAttribute)
-		//		{
-		//			HitActorAttribute->ApplyEffect(HitActor, CausedBy, effect);
-		//		}
-
-		//	}
-		//}
-	}
+	//IncomingEffect.EffectInstant->AttributeSpec = ModifierEffect.EffectInstant->AttributeSpec;
+	
+	//return IncomingEffect;
 }

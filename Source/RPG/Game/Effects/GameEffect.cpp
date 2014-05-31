@@ -11,12 +11,7 @@ UGameEffect::UGameEffect(const class FPostConstructInitializeProperties& PCIP)
 		
 	
 }
-void UGameEffect::Tick( float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 
-	SetTargetAttributeUpdate();
-}
 void UGameEffect::PreInitialize()
 {
 	switch (EffectType)

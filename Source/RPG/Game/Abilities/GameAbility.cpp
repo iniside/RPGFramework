@@ -32,18 +32,13 @@ void UGameAbility::Initialize(APawn* owner, AController* instigator)
 	{
 		if (GetWorld())
 		{
-			if (OwnerAttributeComp)
+			if (OwnerAttributeComp.IsValid())
 			{
-				OwnerAttributes = Cast<URPGAttributeBaseComponent>(OwnerAttributeComp);
+				OwnerAttributes = Cast<URPGAttributeBaseComponent>(OwnerAttributeComp.Get());
 			}
-			TArray<URPGEquipmentManagerComponent*> equipComps;
-			AbilityOwner->GetComponents<URPGEquipmentManagerComponent>(equipComps);
-			for (URPGEquipmentManagerComponent* equipComp : equipComps)
-			{
-				EquipComp = equipComp;
-				break;
-			}
-			if (OwnerAttributes && EquipComp)
+			EquipComp = AbilityOwner->FindComponentByClass<URPGEquipmentManagerComponent>();
+
+			if (OwnerAttributes.IsValid() && EquipComp.IsValid())
 			{
 				IsAbilityInitialized = true;
 				return;
@@ -141,10 +136,10 @@ bool UGameAbility::CalculateFinalCost(float energyCost, float healthCost, float 
 
 FHitResult UGameAbility::GetHitResult(float Range, FName StartSocket)
 {
-	FVector Origin = GetCastingLocation(StartSocket);
+	const FVector Origin = GetCastingLocation(StartSocket);
 	const FVector ShootDir = GetCameraAim();
 
-	FVector StartTrace = GetCameraDamageStarLocation(ShootDir);
+	const FVector StartTrace = GetCameraDamageStarLocation(ShootDir);
 	const FVector EndTrace = (StartTrace + ShootDir * Range);
 	FHitResult Impact = RangedPowerTrace(StartTrace, EndTrace);
 	
@@ -159,7 +154,7 @@ FHitResult UGameAbility::GetHitResult(float Range, FName StartSocket)
 		FHitResult hitResult = RangedPowerTrace(Origin, Impact.ImpactPoint); //Origin + impactDir*range);
 		DrawDebugLine(GetWorld(), Origin, Impact.ImpactPoint, FColor::Blue, true, 10.0f, 0.0f, 1.0f);
 
-		SetTargetAttributes(Impact.GetActor());
+		TargetAttributes = Impact.Actor->FindComponentByClass<URPGAttributeComponent>();
 
 		if (hitResult.GetActor())
 		{
@@ -267,7 +262,7 @@ FVector UGameAbility::GetCameraAim() const
 	return FinalAim;
 }
 
-USkeletalMeshComponent* UGameAbility::GetWeaponMesh()
+USkeletalMeshComponent* UGameAbility::GetWeaponMesh() const
 {
 	if (AbilityOwner)
 	{
@@ -289,11 +284,12 @@ USkeletalMeshComponent* UGameAbility::GetWeaponMesh()
 	return NULL;
 }
 
-FVector UGameAbility::GetCastingLocation(FName SocketName)
+FVector UGameAbility::GetCastingLocation(FName SocketName) const
 {
-	if (GetWeaponMesh() != NULL)
+	const USkeletalMeshComponent* weapon = GetWeaponMesh();
+	if (weapon)
 	{
-		return GetWeaponMesh()->GetSocketLocation(SocketName);
+		return weapon->GetSocketLocation(SocketName);
 	}
 	//if (MainCasterWeapon.IsValid())
 	//{

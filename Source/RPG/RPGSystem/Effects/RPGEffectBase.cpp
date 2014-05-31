@@ -2,210 +2,92 @@
 #pragma once
 #include "RPG.h"
 #include "../Components/RPGAttributeComponent.h"
+#include "RPGEffectPeriodic.h"
+#include "GameplayTagsManager.h"
+#include "GameplayTagsModule.h"
 #include "RPGEffectBase.h"
 
-void FEffectSpec::SetEffect()
-{
-	if (EffectClass)
-	{
-		Effect = ConstructObject<URPGEffectBase>(EffectClass);
-		if (Effect)
-		{
-			Effect->SetTarget(Target);
-			Effect->SetCauser(CausedBy);
-			Effect->SetAttributeToModify(AttributeToMod);
-			Effect->SetTargetAttributeSpec(TargetAttributeSpec);
-			Effect->SetAttributeSpecList(AttributeSpecList);
-		}
-	}
-}
-
 URPGEffectBase::URPGEffectBase(const class FPostConstructInitializeProperties& PCIP)
-	: Super(PCIP)
+: Super(PCIP)
 {
-	
-}
-void URPGEffectBase::Tick( float DeltaTime)
-{
-	//Super::Tick(DeltaTime);
 
-	//currentPeriodTime += DeltaTime;
-	//if (currentPeriodTime >= PeriodLenght)
-	//{
-	//	OnEffectPeriod();
-	//	currentPeriodTime = 0;
-	//}
-	//if (ApplicationType != EApplicationType::Infinite)
-	//{
-	//	CurrentDuration += DeltaTime;
-	//	if (CurrentDuration >= TotalDuration)
-	//	{
-	//		CurrentDuration = 0;
-	//		//Deinitialize();
-	//		//OnEffectEnd();
-	//		SelfRemoveEffect();
-	//	}
-	//}
-	//OnEffectTick(); //this will tick every frame.
-}
-bool URPGEffectBase::IsTickable() const
-{
-	//UWorld* world = GetCurrentWorld();
-	if(IsEffectActive)
-	{
-		if(Target)
-		{
-			if(GetWorld())
-			{
-				//if effect is not periodic there is no point in ticking.
-				if (ApplicationType == EApplicationType::Periodic)
-				{
-					return true;
-				}
-				return false;
-			}
-			return false;
-		}
-		return false;
-	}
-	return false;
 }
 
-TStatId URPGEffectBase::GetStatId() const
-{
-	return this->GetStatID();
-}
-
-void URPGEffectBase::ExecuteTick()
-{
-	OnEffectPeriod();
-}
 
 void URPGEffectBase::PreInitialize()
 {
-	if (IsCooldownEffect)
-		OwnedTags.AddTag("Ability.Cooldown");
+
 }
-//change to to bool
-//so we can check if effect has been initialized properly
+
 bool URPGEffectBase::Initialize()
 {
 	if (Target)
 	{
-		TArray<URPGAttributeComponent*> effectMngComps;
-		URPGAttributeComponent* effectMngrComp = NULL;
-		Target->GetComponents<URPGAttributeComponent>(effectMngComps);
-		for (URPGAttributeComponent* effectMngComp : effectMngComps)
-		{
-			effectMngrComp = effectMngComp;
-			break;
-		}
-		TArray<URPGAttributeComponent*> CausedByAttributes;
-		URPGAttributeComponent* CausedByAttribute = NULL;
-		CausedBy->GetComponents<URPGAttributeComponent>(CausedByAttributes);
-		for (URPGAttributeComponent* effectMngComp : effectMngComps)
-		{
-			CausedByAttribute = effectMngComp;
-			break;
-		}
+		URPGAttributeComponent* attributeComp = Target->FindComponentByClass<URPGAttributeComponent>();
 
-		if (effectMngrComp && CausedByAttribute)
+		URPGAttributeComponent* CausedByAttribute = CausedBy->FindComponentByClass<URPGAttributeComponent>();
+
+		if (attributeComp && CausedByAttribute)
 		{
-			TargetAttributes = effectMngrComp;
+			TargetAttributes = attributeComp;
 			CauserAttributes = CausedByAttribute;
-			//targetAttributeComponent = effectMngrComp;
+			IsInitialized = true;
+			return true;
 		}
-		TotalDuration = PeriodLenght * PeriodsCount;
-		
-		IsEffectActive = true;
-		IsEffectAppiled = true;
-		OwnedTags.AddTag(EffectTag);
-		//EffectTimerDel.BindDynamic(this, &URPGEffectBase::ExecuteTick);
-		OnEffectActivation.Broadcast(this->GetClass(), IsEffectActive);
-		OnEffectAppiled();
-		return true;
 	}
 	return false;
 }
 
 void URPGEffectBase::Deinitialize()
 {
-	OnEffectEnd();
-	IsEffectActive = false;
-	//OnEffectDeactivation.Broadcast(this->GetClass(), IsEffectActive);
-	PeriodLenght = 0;
-	TotalDuration = 0;
+
 }
 
-void URPGEffectBase::SelfRemoveEffect()
-{
-	OnEffectEnd(); //we gice chance to excute any logic before effect is completly removed
-	if (ApplicationType != EApplicationType::InstantApplication)
-	{
-		TargetAttributes->RemoveEffect(this);
-	}
-}
-
-//void URPGEffectBase::ApplyEffectFromEffect(TSubclassOf<class URPGEffectBase> Effect)
+//void URPGEffectBase::SpreadEffect(URPGEffectBase* EffectToSpread, FVector HitLocation, float Radius, int32 MaxTargets)
 //{
-//	if (Target && TargetAttributes)
+//	TArray<AActor*> ActorHits;
+//	if ((!GetWorld()))
+//		return;// ActorHits;
+//
+//	float TargetCounter = 0;
+//	//EffectSpec.SetEffect();
+//
+//	FCollisionQueryParams SphereParams(this->GetFName(), false, CausedBy);
+//	//make sure we have world
+//
+//	TArray<FOverlapResult> Overlaps;
+//	GetWorld()->OverlapMulti(Overlaps, HitLocation, FQuat::Identity, FCollisionShape::MakeSphere(Radius), SphereParams, FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllDynamicObjects));
+//
+//
+//	for (FOverlapResult& overlap : Overlaps)
 //	{
-//		TargetAttributes->ApplyEffect(Target, Effect);
+//		ActorHits.AddUnique(overlap.GetActor());
 //	}
+//
+//	if (ActorHits.Num() > 0)
+//	{
+//		int32 TargetCounter = 0;
+//		if (MaxTargets > TargetCounter)
+//		{
+//			TargetCounter++;
+//			for (AActor* ActorHit : ActorHits)
+//			{
+//				URPGAttributeComponent* HitActorAttribute = ActorHit->FindComponentByClass<URPGAttributeComponent>();
+//
+//				if (HitActorAttribute)
+//				{
+//					//EffectToSpread->SetCauser(CausedBy);
+//					EffectToSpread->SetTarget(ActorHit);
+//
+//					EffectToSpread->PreInitialize();
+//					EffectToSpread->Initialize();
+//				}
+//			}
+//
+//		}
+//	}
+//
 //}
-
-bool URPGEffectBase::CanAffectEffect(URPGEffectBase* TargetEffect)
-{
-	return RequiredTags.HasAnyTag(TargetEffect->OwnedTags);
-}
-
-void URPGEffectBase::SpreadEffect(FEffectSpec EffectSpecs, FVector HitLocation, float Radius, int32 MaxTargets)
-{
-	if ((!GetWorld()))
-		return;
-
-	//EffectSpec.SetEffect();
-
-	FCollisionQueryParams SphereParams(this->GetFName(), false, CausedBy);
-	//make sure we have world
-
-	TArray<FOverlapResult> Overlaps;
-	GetWorld()->OverlapMulti(Overlaps, HitLocation, FQuat::Identity, FCollisionShape::MakeSphere(Radius), SphereParams, FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllDynamicObjects));
-	//DrawDebugSphere(GetWorld(), HitLocation, Radius, 32, FColor::Black, true, 5.0f);
-	//FAttributeRadialEffectEvent RadialEffect;
-	//RadialEffect.EffectClass = Effect;
-	if (Overlaps.Num() > 0)
-	{
-		//this is going to be very ugly, change it with next version of stable engine!
-		int32 TargetCounter = 0;
-		for (auto It = Overlaps.CreateIterator(); It; ++It)
-		{
-			TargetCounter++;
-			if (MaxTargets > TargetCounter)
-			{
-				AActor* HitActor = Overlaps[It.GetIndex()].GetActor();
-
-				TArray<URPGAttributeComponent*> HitActorAttributes;
-				URPGAttributeComponent* HitActorAttribute = NULL;
-				HitActor->GetComponents<URPGAttributeComponent>(HitActorAttributes);
-				for (URPGAttributeComponent* HitAttr : HitActorAttributes)
-				{
-					HitActorAttribute = HitAttr;
-					break;
-				}
-
-				if (HitActorAttribute)
-				{
-					EffectSpecs.Target = HitActor;
-					EffectSpecs.CausedBy = CausedBy;
-					//EffectSpecs.SetEffect();
-					HitActorAttribute->ApplyEffect(EffectSpecs);
-				}
-			}
-
-		}
-	}
-}
 
 int32 URPGEffectBase::RemoveEffect(FName Tag, int32 Count, class URPGAttributeComponent* TargetToRemoveEffects)
 {
@@ -219,12 +101,12 @@ int32 URPGEffectBase::RemoveEffect(FName Tag, int32 Count, class URPGAttributeCo
 			{
 				if (Count >= effectCounter)
 				{
-					URPGEffectBase* tempEffect = TargetToRemoveEffects->GetEffects()[It.GetIndex()];
-					if (tempEffect->OwnedTags.HasTag(Tag))
-					{
-						tempEffect->SelfRemoveEffect();
-						effectsRemoved++;
-					}
+					//URPGEffectBase* tempEffect = TargetToRemoveEffects->GetEffects()[It.GetIndex()];
+					//if (tempEffect->OwnedTags.HasTag(Tag))
+					//{
+					//	tempEffect->SelfRemoveEffect();
+					//	effectsRemoved++;
+					//}
 					effectCounter++;
 				}
 			}
@@ -233,63 +115,67 @@ int32 URPGEffectBase::RemoveEffect(FName Tag, int32 Count, class URPGAttributeCo
 	return effectsRemoved;
 }
 
-void URPGEffectBase::ReduceAttributeForDuration(FModdableAttributes AttributeMod, float ReductionTime)
+void URPGEffectBase::ChangeAttribute(TEnumAsByte<EAttributeOperation> OperationType)
 {
-	if (TargetAttributes)
+	TargetAttributes->ChangeAttribute(AttributeName, AttributeValue, OperationType);
+}
+
+void URPGEffectBase::ApplyToTarget(FAttributeSpec AttributeSpecIn, TEnumAsByte<EAttributeOperation> OperationType)
+{
+	for (FModdableAttributes& modAttr : AttributeSpecIn.AttributeModList)
 	{
-		reducedValue = AttributeMod.ModValue;
-		TargetAttributes->ModifyAttribute(AttributeMod, EAttributeOperation::Attribute_Subtract);
+		TargetAttributes->ModifyAttribute(modAttr, OperationType);
 	}
 }
 
-void URPGEffectBase::ModifyTargetAttributes(TArray<FAttributeSpec> AttributesToMod, TEnumAsByte<EAttributeOperation> OperationType)
+void URPGEffectBase::ApplyToTargetList(TArray<FModdableAttributes> AttributeMod, TEnumAsByte<EAttributeOperation> OperationType)
 {
-	if (AttributesToModify.Num() > 0)
+	for (FModdableAttributes& modAttr : AttributeMod)
 	{
-	}
-
-	for (FAttributeSpec& spec : AttributesToMod)
-	{
-		if (OwnedTags.HasTag(spec.TargetTag))
-		{
-			if (TargetAttributes)
-			{
-				TargetAttributes->ModifyAttributeList(spec.AttributeModList, OperationType);
-			}
-		}
+		TargetAttributes->ModifyAttribute(modAttr, OperationType);
 	}
 }
 
-void URPGEffectBase::ModifyAttribute(TArray<FAttributeSpec> AttributeSpec, TEnumAsByte<EAttributeOperation> OperationType)
+TArray<FModdableAttributes> URPGEffectBase::ModifyAttribute(TArray<FModdableAttributes> AttributeMod, FName AttributeNameIn, float ModifyValue, EAttributeOperation OperationType)
 {
-	for (FAttributeSpec& spec : AttributeSpec)
+	for (FModdableAttributes& modAttr : AttributeMod)
 	{
-		if (OwnedTags.HasTag(spec.TargetTag))
+		if (modAttr.AttributeName == AttributeName)
 		{
-			if (TargetAttributes)
-			{
-				TargetAttributes->ModifyAttribute(spec.AttributeMod, OperationType);
-			}
+			modAttr.ModValue = ModifyAttributeSpecHelper(ModifyValue, modAttr.ModValue, OperationType);
 		}
 	}
+	return AttributeMod;
 }
 
-FModdableAttributes URPGEffectBase::GetModAttribute(FName AttributeName)
+float URPGEffectBase::ModifyAttributeSpecHelper(float AttributeValue, float ModValue, EAttributeOperation OperationType)
 {
-	FModdableAttributes tempAtt;
-	if (AttributesToModify.Num())
+	switch (OperationType)
 	{
-		for (int Index = 0; Index < AttributesToModify.Num(); Index++)
-		{
-			if (AttributesToModify[Index].AttributeName == AttributeName)
-			{
-				tempAtt.AttributeName = AttributesToModify[Index].AttributeName;
-				tempAtt.ModValue = AttributesToModify[Index].ModValue;
-				return tempAtt;
-			}
-		}
+	case EAttributeOperation::Attribute_Add:
+		return AttributeValue += ModValue;
+	case EAttributeOperation::Attribute_Subtract:
+		return AttributeValue -= ModValue;
+	case EAttributeOperation::Attribute_Multiply:
+		return AttributeValue *= ModValue;
+	case EAttributeOperation::Attribute_Divide:
+		return AttributeValue /= ModValue;
+	case EAttributeOperation::Attribute_Set:
+		return AttributeValue = ModValue;
+	default:
+		return 0;
 	}
-	return tempAtt;
+	return 0;
+}
+
+float URPGEffectBase::GetTargetAttributeValue(FName AttributeNameIn)
+{
+	return TargetAttributes->GetNumericValue(AttributeNameIn);
+}
+
+float URPGEffectBase::GetCauserAttributeValue(FName AttributeNameIn)
+{
+	return CauserAttributes->GetNumericValue(AttributeNameIn);
 }
 
 TArray < TWeakObjectPtr<URPGEffectBase> > URPGEffectBase::GetModificableEffects()
@@ -300,17 +186,138 @@ TArray < TWeakObjectPtr<URPGEffectBase> > URPGEffectBase::GetModificableEffects(
 	{
 		for (auto It = TargetAttributes->GetEffects().CreateIterator(); It; ++It)
 		{
-			TWeakObjectPtr<URPGEffectBase> tempEffect = TargetAttributes->GetEffects()[It.GetIndex()];
+			//TWeakObjectPtr<URPGEffectBase> tempEffect = TargetAttributes->GetEffects()[It.GetIndex()];
 
-			if (tempEffect->OwnedTags.HasAnyTag(OwnedTags))
-			{
-				tempArray.Add(tempEffect);
-			}
+			//if (tempEffect->OwnedTags.HasAnyTag(OwnedTags))
+			//{
+			//	tempArray.Add(tempEffect);
+			//}
 		}
 		return tempArray;
 	}
 
 	return tempArray;
+}
+
+TArray<AActor*> URPGEffectBase::SpreadEffect(URPGEffectBase* EffectIn, FVector FromLoc, float Radius, int32 MaxTargets)
+{
+	TArray<AActor*> ActorHits;
+	if ((!GetWorld()))
+		return ActorHits;
+
+	TWeakObjectPtr<URPGEffectPeriodic> PeriodicEffect = Cast<URPGEffectPeriodic>(EffectIn);
+
+	float TargetCounter = 0;
+	//EffectSpec.SetEffect();
+
+	FCollisionQueryParams SphereParams(this->GetFName(), false, CausedBy);
+	//make sure we have world
+
+	TArray<FOverlapResult> Overlaps;
+	GetWorld()->OverlapMulti(Overlaps, FromLoc, FQuat::Identity, FCollisionShape::MakeSphere(Radius), SphereParams, FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllDynamicObjects));
+
+
+	for (FOverlapResult& overlap : Overlaps)
+	{
+		ActorHits.AddUnique(overlap.GetActor());
+	}
+
+	if (ActorHits.Num() > 0)
+	{
+		int32 TargetCounter = 0;
+		if (MaxTargets > TargetCounter)
+		{
+			TargetCounter++;
+			for (AActor* ActorHit : ActorHits)
+			{
+				URPGAttributeComponent* HitActorAttribute = ActorHit->FindComponentByClass<URPGAttributeComponent>();
+
+				if (HitActorAttribute)
+				{
+					if (PeriodicEffect.IsValid())
+					{
+						PeriodicEffect->SetTarget(ActorHit);
+						PeriodicEffect->PreInitialize();
+						PeriodicEffect->Initialize();
+						HitActorAttribute->ApplyPeriodicEffect(PeriodicEffect.Get());
+						continue;
+					}
+					EffectIn->SetTarget(ActorHit);
+
+					EffectIn->PreInitialize();
+					EffectIn->Initialize();
+				}
+			}
+
+		}
+	}
+
+	return ActorHits;
+}
+
+TArray<AActor*> URPGEffectBase::SpreadEffects(TArray<URPGEffectBase*> EffectsIn, FVector FromLoc, float Radius, int32 MaxTargets)
+{
+	TArray<AActor*> ActorHits;
+	if ((!GetWorld()))
+		return ActorHits;
+
+	//TWeakObjectPtr<URPGEffectPeriodic> PeriodicEffect = Cast<URPGEffectPeriodic>(EffectIn);
+
+	float TargetCounter = 0;
+	//EffectSpec.SetEffect();
+
+	FCollisionQueryParams SphereParams(this->GetFName(), false, CausedBy);
+	//make sure we have world
+
+	TArray<FOverlapResult> Overlaps;
+	GetWorld()->OverlapMulti(Overlaps, FromLoc, FQuat::Identity, FCollisionShape::MakeSphere(Radius), SphereParams, FCollisionObjectQueryParams(FCollisionObjectQueryParams::InitType::AllDynamicObjects));
+
+
+	for (FOverlapResult& overlap : Overlaps)
+	{
+		ActorHits.AddUnique(overlap.GetActor());
+	}
+
+	if (ActorHits.Num() > 0)
+	{
+		int32 TargetCounter = 0;
+		if (MaxTargets > TargetCounter)
+		{
+			TargetCounter++;
+			for (AActor* ActorHit : ActorHits)
+			{
+				URPGAttributeComponent* HitActorAttribute = ActorHit->FindComponentByClass<URPGAttributeComponent>();
+
+				if (HitActorAttribute)
+				{
+					for (URPGEffectBase* effect : EffectsIn)
+					{
+						TWeakObjectPtr<URPGEffectPeriodic> periodicEffect = Cast<URPGEffectPeriodic>(effect);
+
+						if (periodicEffect.IsValid())
+						{
+							periodicEffect->SetTarget(ActorHit);
+							periodicEffect->SetCauser(CausedBy);
+							periodicEffect->PreInitialize();
+							periodicEffect->Initialize();
+
+							HitActorAttribute->ApplyPeriodicEffect(periodicEffect.Get());
+							continue;
+						}
+
+
+						effect->SetTarget(ActorHit);
+						effect->SetCauser(CausedBy);
+						effect->PreInitialize();
+						effect->Initialize();
+					}
+				}
+			}
+
+		}
+	}
+
+	return ActorHits;
 }
 
 UWorld* URPGEffectBase::GetWorld() const

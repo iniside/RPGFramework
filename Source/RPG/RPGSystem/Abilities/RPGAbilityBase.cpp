@@ -2,7 +2,13 @@
 #pragma once
 #include "RPG.h"
 #include "../Components/RPGAttributeComponent.h"
+#include "../Structs/RPGSystemSructs.h"
 #include "../Effects/RPGEffectBase.h"
+#include "../Effects/RPGEffectInstant.h"
+#include "../Effects/RPGEffectPeriodic.h"
+#include "../Effects/RPGEffectModifier.h"
+#include "../Effects/RPGEffectAreaSpread.h"
+#include "GameplayTagContainer.h"
 #include "RPGAbilityBase.h"
 
 
@@ -96,16 +102,11 @@ void URPGAbilityBase::Initialize(APawn* owner, AController* instigator)
 	{
 		if (GetWorld())
 		{
-			TArray<URPGAttributeComponent*> attributeComps;
-			AbilityOwner->GetComponents<URPGAttributeComponent>(attributeComps);
-			for (URPGAttributeComponent* attrComp : attributeComps)
-			{
-				OwnerAttributeComp = attrComp;
-				break;
-			}
-			if (OwnerAttributeComp)
+			OwnerAttributeComp = AbilityOwner->FindComponentByClass<URPGAttributeComponent>();
+			if (OwnerAttributeComp.IsValid())
 			{
 				IsAbilityInitialized = true;
+				OnAbilityInitialized();
 				return;
 			}
 			IsAbilityInitialized = false;
@@ -123,31 +124,6 @@ void URPGAbilityBase::InputPressed()
 	if (!CheckAbilityCost())
 		return;
 
-	//if (CooldownEffectClass)
-	//{
-	//	if (!CooldownEffect.IsValid())
-	//	{
-	//		CooldownEffect = ConstructObject<URPGEffectBase>(CooldownEffectClass);
-	//		//OwnerAttributeComp->ApplyEffect(AbilityOwner, AbilityOwner, CooldownEffectClass);
-	//		CooldownEffect->SetCauser(AbilityOwner);
-	//		CooldownEffect->SetTarget(AbilityOwner);
-	//		CooldownEffect->PreInitialize();
-	//		CooldownEffect->Initialize();
-	//		
-	//		OwnerAttributeComp->EffectsList.Add(CooldownEffect);
-
-	//		AbilityTags = CooldownEffect->OwnedTags;
-	//		
-	//	}
-	//}
-
-	//if (CooldownEffect.IsValid())
-	//{
-	//	if (CooldownEffect->CurrentDuration >= CooldownEffect->TotalDuration)
-	//	{
-	//		float omg = 0;
-	//	}
-	//}
 	if (IsAbilityInitialized)
 	{
 		/*
@@ -200,11 +176,7 @@ bool URPGAbilityBase::CheckAbilityCost()
 	return true;
 }
 
-float URPGAbilityBase::GetCurrentCooldownTime()
+float URPGAbilityBase::GetOwnerAttribute(FName AttributeName)
 {
-	if (CooldownEffect.IsValid())
-	{
-		return CooldownEffect->CurrentDuration;
-	}
-	return 0;
+	return OwnerAttributeComp->GetNumericValue(AttributeName);
 }

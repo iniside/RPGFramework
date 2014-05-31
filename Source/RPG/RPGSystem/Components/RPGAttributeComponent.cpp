@@ -3,6 +3,8 @@
 #pragma once
 #include "RPG.h"
 #include "../Effects/RPGEffectBase.h"
+#include "../Effects/RPGEffectInstant.h"
+#include "../Effects/RPGEffectPeriodic.h"
 #include "../RPGAttributeBase.h"
 #include "RPGAttributeComponent.h"
 
@@ -15,7 +17,6 @@ URPGAttributeComponent::URPGAttributeComponent(const class FPostConstructInitial
 void URPGAttributeComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	TickEffects(DeltaTime);
 }
 
 void URPGAttributeComponent::InitializeComponent()
@@ -27,103 +28,20 @@ void URPGAttributeComponent::OnRegister()
 	Super::OnRegister();
 }
 
-void URPGAttributeComponent::TickEffects(float DeltaTime)
+void URPGAttributeComponent::TakeDamage(float DamageAmount, FName AttributeName, AActor* CausedBy)
 {
-	//GetWorld()->GetTimerManager().
-	//float CurrentTime;// = GetCurrentTime();
-	if (EffectsList.Num() <= 0)
-		return;
-
-	for (auto It = EffectsList.CreateIterator(); It; ++It)
-	{
-		URPGEffectBase* effect = EffectsList[It.GetIndex()];
-
-		effect->currentPeriodTime += DeltaTime;
-		effect->CurrentDuration += DeltaTime;
-		if (effect->CurrentDuration >= effect->TotalDuration)
-		{
-			effect->CurrentDuration = 0;
-			RemoveEffect(effect);
-			break;
-		}
-		if (effect->currentPeriodTime >= effect->PeriodLenght)
-		{
-			effect->currentPeriodTime = 0;
-			effect->ExecuteTick();
-		}
-	}
+	ChangeAttribute(AttributeName, DamageAmount, EAttributeOperation::Attribute_Subtract);
 }
 
-//void URPGAttributeComponent::GetOrCreateAttribute()
-//{
-//	if (AttributeClass)
-//	{
-//		if (!AttributeObj)
-//		{
-//			AttributeObj = ConstructObject<URPGAttributeBase>(AttributeClass);
-//		}
-//	}
-//}
-
-
-//void URPGAttributeComponent::ApplyEffect(AActor* Target, AActor* CausedBy, TSubclassOf<class URPGEffectBase> Effect)
-//{
-//	URPGEffectBase* effectTemp = NULL;
-//	effectTemp = ConstructObject<URPGEffectBase>(Effect);
-//	if (effectTemp)
-//	{
-//		effectTemp->SetTarget(Target);
-//		effectTemp->SetCauser(CausedBy);
-//		effectTemp->PreInitialize();
-//
-//		if (effectTemp->ApplicationType == EApplicationType::InstantApplication)
-//		{
-//			OnRecivedEffect.Broadcast(Target, Effect);
-//			effectTemp->Deinitialize();
-//		}
-//		if (effectTemp->Initialize())
-//		{
-//			if (effectTemp->ApplicationType == EApplicationType::Periodic)
-//			{
-//				//if (CausedBy != GetOwner())
-//				OnRecivedEffect.Broadcast(Target, Effect);
-//				SetPeriodicEffect(effectTemp);
-//			}
-//		}
-//	}
-//}
-
-void URPGAttributeComponent::ApplyEffect(struct FEffectSpec& EffectSpec)
+void URPGAttributeComponent::ApplyPeriodicEffect(class URPGEffectPeriodic* PeriodicEffect)
 {
-	EffectSpec.SetEffect();
-	//effectTemp = ConstructObject<URPGEffectBase>(Effect);
-	if (EffectSpec.Effect)
-	{
-		//EffectSpec.Effect->SetTarget(Target);
-		//EffectSpec.Effect->SetCauser(CausedBy);
-		EffectSpec.Effect->PreInitialize();
 
-		if (EffectSpec.Effect->ApplicationType == EApplicationType::InstantApplication)
-		{
-			EffectSpec.Effect->Initialize();
-			OnRecivedEffect.Broadcast(EffectSpec.Target, EffectSpec.Effect->GetClass());
-			EffectSpec.Effect->Deinitialize();
-			return;
-		}
-		if (EffectSpec.Effect->Initialize())
-		{
-			if (EffectSpec.Effect->ApplicationType == EApplicationType::Periodic)
-			{
-				//if (CausedBy != GetOwner())
-				OnRecivedEffect.Broadcast(EffectSpec.Target, EffectSpec.Effect->GetClass());
-				SetPeriodicEffect(EffectSpec.Effect);
-				return;
-			}
-		}
-	}
+	//OnRecivedEffect.Broadcast(EffectSpec.Target, EffectSpec.EffectPeriod->GetClass());
+	SetPeriodicEffect(PeriodicEffect);
+	return;
 }
 
-void URPGAttributeComponent::SetPeriodicEffect(class URPGEffectBase* newEffect)
+void URPGAttributeComponent::SetPeriodicEffect(class URPGEffectPeriodic* newEffect)
 {
 
 	//if effect has been found on array
@@ -131,12 +49,12 @@ void URPGAttributeComponent::SetPeriodicEffect(class URPGEffectBase* newEffect)
 	//some effects will not be appiled multiple times
 	//instead they can have their duration extended
 	//or can be reseted. depends on designer choices.
-	if (EffectsList.Num() > 0)
+	if (PeriodicEffectsList.Num() > 0)
 	{
-		URPGEffectBase* firstMatch = NULL;
-		for (auto it = EffectsList.CreateIterator(); it; ++it)
+		URPGEffectPeriodic* firstMatch = NULL;
+		for (auto it = PeriodicEffectsList.CreateIterator(); it; ++it)
 		{
-			URPGEffectBase* match = EffectsList[it.GetIndex()];
+			URPGEffectPeriodic* match = PeriodicEffectsList[it.GetIndex()];
 			if (match->OwnedTags == newEffect->OwnedTags)
 			{
 				firstMatch = match;
@@ -164,7 +82,7 @@ void URPGAttributeComponent::SetPeriodicEffect(class URPGEffectBase* newEffect)
 			the same thing.
 			*/
 			RemoveEffect(firstMatch);
-			EffectsList.Add(newEffect);
+			PeriodicEffectsList.Add(newEffect);
 		}
 	}
 
@@ -172,32 +90,95 @@ void URPGAttributeComponent::SetPeriodicEffect(class URPGEffectBase* newEffect)
 
 	//GetWorld()->GetTimerManager().SetTimer(newEffect->EffectTimerDel, newEffect->PeriodLenght, true);
 
-	EffectsList.Add(newEffect);
+	PeriodicEffectsList.Add(newEffect);
 }
-void URPGAttributeComponent::RemoveEffect(class URPGEffectBase* effectToRemove)
+
+void URPGAttributeComponent::ApplyInstantEffects(TArray<FEffectInstant> EffectSpec, class URPGEffectPeriodic* ParentEffect)
+{
+	/*
+	If we have parent effect, this means that incoming effects has been appiled from withing effect.
+	Check parent effect if it does have cached version of effects,
+	so instead of making new object we will just retrive pointer to it
+	*/
+	if (CheckParentEffect(ParentEffect))
+		return;
+
+	// Cache effects
+	for (FEffectInstant& effectSpec : EffectSpec)
+	{
+		//effectSpec.SetInstantEffect();
+
+		if (!effectSpec.EffectInstant.IsValid())
+			return;
+
+		if (!ParentEffect)
+			return;
+
+		if (effectSpec.DoesCauserIsTarget)
+		{
+			//effectSpec.CausedBy = ParentEffect->GetCausedBy();
+			//effectSpec.Target = ParentEffect->GetCausedBy();
+			effectSpec.EffectInstant->SetTarget(ParentEffect->GetCausedBy());
+		}
+	}
+
+	//one time action, we should never get here second time.
+	//Run cached effects for first time.
+	if (CheckParentEffect(ParentEffect))
+		return;
+}
+
+void URPGAttributeComponent::ApplyInstantEffect(FEffectInstant InstantEffectSpec)
+{
+	InstantEffectSpec.EffectInstant->PreInitialize();
+	InstantEffectSpec.EffectInstant->Initialize();
+}
+
+bool URPGAttributeComponent::CheckParentEffect(class URPGEffectPeriodic* ParentEffect)
+{
+	//if (ParentEffect)
+	//{
+	//	if (ParentEffect->CachedEffectInstantSpec.Num() > 0)
+	//	{
+	//		for (FEffectInstant& effect : ParentEffect->CachedEffectInstantSpec)
+	//		{
+	//			if (effect.EffectInstant.IsValid())
+	//			{
+	//				effect.EffectInstant->PreInitialize();
+	//				effect.EffectInstant->Initialize();
+	//				OnRecivedEffect.Broadcast(effect.EffectInstant->GetTarget(), effect.EffectInstant->GetClass());
+	//			}
+	//		}
+	//		return true;
+	//	}
+	//}
+	return false;
+}
+
+void URPGAttributeComponent::RemoveEffect(class URPGEffectPeriodic* effectToRemove)
 {
 	if (effectToRemove)
 	{
 		effectToRemove->Deinitialize(); //deinitialize effect so it no longer ticks		
 		OnEffectRemoved.Broadcast(effectToRemove->GetTarget(), effectToRemove->GetClass());
-		int32 element = EffectsList.Find(effectToRemove);
+		int32 element = PeriodicEffectsList.Find(effectToRemove);
 		//DestroyEffect(EffectsList[element]);
-		EffectsList.RemoveSingle(effectToRemove);
+		PeriodicEffectsList.RemoveSingle(effectToRemove);
 	}
 }
 
-void URPGAttributeComponent::DestroyEffect(class URPGEffectBase* EffectToDestroy)
-{
-	if (EffectToDestroy)
-	{
-		if (EffectToDestroy->IsValidLowLevel())
-		{
-			EffectToDestroy->ConditionalBeginDestroy();
-			EffectToDestroy = NULL;
-		}
-	}
-	GetWorld()->ForceGarbageCollection(true);
-}
+//void URPGAttributeComponent::DestroyEffect(class URPGEffectPeriodic* EffectToDestroy)
+//{
+//	if (EffectToDestroy)
+//	{
+//		if (EffectToDestroy->IsValidLowLevel())
+//		{
+//			EffectToDestroy->ConditionalBeginDestroy();
+//			EffectToDestroy = NULL;
+//		}
+//	}
+//	GetWorld()->ForceGarbageCollection(true);
+//}
 
 void URPGAttributeComponent::OnEffectAppiledToMe_Implementation()
 {
@@ -211,21 +192,21 @@ UProperty* URPGAttributeComponent::GetAttribute(FName AtributeName, TSubclassOf<
 	and that property is the same as requested attribute
 	we just return old pointer.
 	*/
-	//if (cachedAttribute)
-	//{
-	//	if (cachedAttribute->GetFName() == AtributeName)
-	//	{
-	//		return cachedAttribute;
-	//	}
-	//}
-	//if ((!cachedAttribute) || cachedAttribute)
-	//{
-	UProperty* temp = NULL;
-	temp = FindFieldChecked<UProperty>(AttributeClass, AtributeName);
-	//AttributeProp.SetAttribute(temp);
-	return temp;
-	//}
-	return  temp;
+	if (cachedProperty)
+	{
+		if (cachedProperty->GetFName() == AtributeName)
+		{
+			return cachedProperty;
+		}
+	}
+	if ((!cachedProperty) || cachedProperty)
+	{
+		//UProperty* temp = NULL;
+		cachedProperty = FindFieldChecked<UProperty>(AttributeClass, AtributeName);
+		//AttributeProp.SetAttribute(cachedProperty;
+		return cachedProperty;
+	}
+	return  cachedProperty;
 }
 
 float URPGAttributeComponent::GetNumericValue(FName AttributeName)
@@ -278,6 +259,36 @@ bool URPGAttributeComponent::Compare(FName AttributeA, FName AttributeB)
 		return true;
 
 	return false;
+}
+
+void URPGAttributeComponent::ChangeAttribute(FName AttributeName, float ModValue, TEnumAsByte<EAttributeOperation> OperationType)
+{
+	float AttributeValue = GetNumericValue(AttributeName);
+	switch (OperationType)
+	{
+	case EAttributeOperation::Attribute_Add:
+		AttributeValue += ModValue;
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
+	case EAttributeOperation::Attribute_Subtract:
+		AttributeValue -= ModValue;
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
+	case EAttributeOperation::Attribute_Multiply:
+		AttributeValue *= ModValue;
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
+	case EAttributeOperation::Attribute_Divide:
+		AttributeValue = (AttributeValue / ModValue);
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
+	case EAttributeOperation::Attribute_Set:
+		AttributeValue = ModValue;
+		SetNumericValue(AttributeValue, AttributeName);
+		return;
+	default:
+		return;
+	}
 }
 
 void URPGAttributeComponent::ModifyAttribute(FModdableAttributes AttributeMod, TEnumAsByte<EAttributeOperation> OperationType)
@@ -347,6 +358,28 @@ void URPGAttributeComponent::ModifyAttributeList(TArray<FModdableAttributes> Att
 				return;
 			}
 		}
+	}
+}
+
+float URPGAttributeComponent::AttributeOperation(FName AttributeName, float Value, TEnumAsByte<EAttributeOperation> OperationType)
+{
+
+	float AttributeValue = GetNumericValue(AttributeName);
+
+	switch (OperationType)
+	{
+	case EAttributeOperation::Attribute_Add:
+		return AttributeValue += Value;
+	case EAttributeOperation::Attribute_Subtract:
+		return AttributeValue -= Value;
+	case EAttributeOperation::Attribute_Multiply:
+		return AttributeValue *= Value;
+	case EAttributeOperation::Attribute_Divide:
+		return AttributeValue /= Value;
+	case EAttributeOperation::Attribute_Set:
+		return AttributeValue = Value;
+	default:
+		return 0;
 	}
 }
 

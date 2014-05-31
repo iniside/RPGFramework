@@ -1,5 +1,5 @@
 #pragma once
-#include "RPG.h"
+//#include "RPG.h"
 #include "RPGCreateNewObject.generated.h"
 
 

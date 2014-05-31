@@ -1,7 +1,7 @@
 // Copyright 1998-2013 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-#include "RPG.h"
+//#include "RPG.h"
 #include "RPGAbilityManagerComponent.generated.h"
 
 //DECLARE_DELEGATE_RetVal(URPGPowerBase, FOnNewPowerAdded);

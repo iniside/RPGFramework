@@ -1,7 +1,7 @@
 // Copyright 1998-2013 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-#include "RPG.h"
+//#include "RPG.h"
 #include "../../RPGSystem/Components/RPGAttributeComponent.h"
 #include "RPGAttributeBaseComponent.generated.h"
 /*
@@ -9,6 +9,13 @@
 	It would be good idea to group them into Structs later.
 	It could also be done as seprate object, although this approach is less blueprint friendly.
 */
+UENUM()
+enum EAttributeNames
+{
+	Health,
+	Energy,
+	Stamina
+};
 UCLASS(meta = (BlueprintSpawnableComponent), hidecategories = (Object, LOD, Lighting, Transform, Sockets, TextureStreaming))
 class URPGAttributeBaseComponent : public URPGAttributeComponent
 {
@@ -155,6 +162,8 @@ public:
 	FORCEINLINE void SetConsitutionMod() { ConstitutionMod = (Constitution - 10) / 2; };
 	FORCEINLINE float GetConsitutionMod() { return ConstitutionMod; };
 
+
+	FORCEINLINE float GetIntelligence() { return Intelligence; };
 	FORCEINLINE void SetIntelligenceMod(){ IntelligenceMod = (Intelligence - 10) / 2; };
 	FORCEINLINE float GetIntelligenceMod(){ return IntelligenceMod; };
 

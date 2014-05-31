@@ -1,7 +1,7 @@
 // Copyright 1998-2013 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-#include "RPG.h"
+//#include "RPG.h"
 //#include "../RPGCharacter.h"
 #include "../Items/RPGWeaponBase.h"
 #include "../Items/RPGItem.h"

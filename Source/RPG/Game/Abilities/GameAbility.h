@@ -55,12 +55,12 @@ protected:
 		float PeriodicBaseStaminaCost;
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Ability")
-	class URPGAttributeBaseComponent* OwnerAttributes;
+	TWeakObjectPtr<class URPGAttributeBaseComponent> OwnerAttributes;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Ability")
-	class URPGAttributeBaseComponent* TargetAttributes;
+	//UPROPERTY(BlueprintReadOnly, Category = "Ability")
+	//TWeakObjectPtr<class URPGAttributeBaseComponent> TargetAttributes;
 
-	class URPGEquipmentManagerComponent* EquipComp;
+	TWeakObjectPtr<class URPGEquipmentManagerComponent> EquipComp;
 	class ARPGWeaponBase* MainHand;
 	class ARPGWeaponBase* OffHand;
 	/*
@@ -69,12 +69,15 @@ protected:
 	If return true, it also subtract cost from character energy pool.
 	*/
 	bool CalculateFinalCost(float energyCost, float healthCost, float staminaCost);
+	UFUNCTION(BlueprintCallable, Category = "Ability|Helpers")
+	FVector GetCameraAim() const;
+
 private:
 	FHitResult RangedPowerTrace(const FVector& StartTrace, const FVector& EndTrace) const;
 	FVector GetCameraDamageStarLocation(const FVector& AimDir) const;
-	FVector GetCameraAim() const;
-	USkeletalMeshComponent* GetWeaponMesh();
-	FVector GetCastingLocation(FName SocketName);
+
+	USkeletalMeshComponent* GetWeaponMesh() const;
+	FVector GetCastingLocation(FName SocketName) const;
 	FVector GetMuzzleDirection();
 	void SetTargetAttributes(AActor* targetActor);
 };

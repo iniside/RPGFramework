@@ -1,7 +1,7 @@
 // Copyright 1998-2013 Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-#include "RPG.h"
+//#include "RPG.h"
 #include "GameplayTagContainer.h"
 #include "../Structs/RPGSystemSructs.h"
 #include "RPGAttributeComponent.generated.h"
@@ -67,55 +67,56 @@ class URPGAttributeComponent : public UActorComponent
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) OVERRIDE;
 	virtual void InitializeComponent() OVERRIDE;
 	virtual void OnRegister() OVERRIDE;
+
 public:
-	void TakeDamage(float Damage, TSubclassOf<class URPGDamageType> DamageType);
+	virtual void TakeDamage(float DamageAmount, FName AttributeName, AActor* CausedBy);
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AttributeEvents)
 	void OnDamageAppiled();
+
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AttributeEvents)
 	void OnActorDeath();
+
 public:
+
 	UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "Attributes")
 		FOnRecievedEffect OnRecivedEffect;
+
 	UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "Attributes")
 		FOnAttributeChange OnAttributeChange;
+
 	UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "Attributes")
 		FOnEffectRemoved OnEffectRemoved;
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Attributes")
 		void OnEffectAppiledToMe();
-public:
-	UPROPERTY(BlueprintReadWrite, Category = "Effects")
-	TArray<class URPGEffectBase*> EffectsList;
 
-	FORCEINLINE TArray<class URPGEffectBase*> GetEffects() { return EffectsList; };
+	UPROPERTY(BlueprintReadWrite, Category = "Effects")
+		TArray<class URPGEffectPeriodic*> PeriodicEffectsList;
+	FORCEINLINE TArray<class URPGEffectPeriodic*> GetEffects() { return PeriodicEffectsList; };
+public:
+	void RemoveEffect(class URPGEffectPeriodic* effectToRemove);
 
 	/*
-		Container of effects that affect actor idefinetly;
-		Should be saved. This way we can determine, whether to reapply effect or not;
-		So we won't apply effect more than one time if we don't want so;
-		Useful for effects that simulate "passive-active" traits;
-		For example "Increase Intelligence when you health is below 50%"
+		Periodic Effects
 	*/
-	UPROPERTY(BlueprintReadWrite, Category = "Effects")
-		FGameplayTagContainer InfiniteEffectsTags;
+	virtual void ApplyPeriodicEffect(class URPGEffectPeriodic* PeriodicEffect);
 
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attributes")
-	//TSubclassOf<class URPGAttributeBase> AttributeClass;
+	/*
+		Instant Effects
+	*/
+public:
+	virtual void ApplyInstantEffects(TArray<FEffectInstant> EffectSpec, class URPGEffectPeriodic* ParentEffect);
 
-	//UPROPERTY(BlueprintReadOnly, Category = "Attributes")
-	//URPGAttributeBase* AttributeObj;
+	virtual void ApplyInstantEffect(FEffectInstant InstantEffectSpec);
 
-	void RemoveEffect(class URPGEffectBase* effectToRemove);
+private:
+	bool CheckParentEffect(class URPGEffectPeriodic* ParentEffect);
 
-	//virtual void ApplyEffect(AActor* Target, AActor* CausedBy, TSubclassOf<class URPGEffectBase> Effect);
+public:
+	UProperty* GetAttribute(FName AtributeName, TSubclassOf<URPGAttributeComponent> AttributeClass);
 
-	virtual void ApplyEffect(struct FEffectSpec& EffectSpec);
-
-	UFUNCTION(BlueprintCallable, Category = "Attributes")
-		UProperty* GetAttribute(FName AtributeName, TSubclassOf<URPGAttributeComponent> AttributeClass);
-
-	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	UFUNCTION(BlueprintPure, Category = "Attributes")
 		float GetNumericValue(FName AttributeName);
 
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
@@ -134,10 +135,19 @@ public:
 		bool Compare(FName AttributeA, FName AttributeB);
 
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
+		void ChangeAttribute(FName AttributeName, float ModValue, TEnumAsByte<EAttributeOperation> OperationType);
+
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
 		void ModifyAttribute(FModdableAttributes AttributeMod, TEnumAsByte<EAttributeOperation> OperationType);
 
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
 		void ModifyAttributeList(TArray<FModdableAttributes> Attributes, TEnumAsByte<EAttributeOperation> OperationType);
+
+	/*
+		Doesn't modify attribute. Just find it, add Value and return result for further use.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+		float AttributeOperation(FName AttributeName, float Value, TEnumAsByte<EAttributeOperation> OperationType);
 
 	/*
 		Get list of attributes along with their values
@@ -146,10 +156,10 @@ public:
 		TArray<FModdableAttributes> GetAttributeList();
 
 protected:
-	void DestroyEffect(class URPGEffectBase* EffectToDestroy);
-	void SetPeriodicEffect(class URPGEffectBase* newEffect);
+	//void DestroyEffect(class URPGEffectBase* EffectToDestroy);
+	void SetPeriodicEffect(class URPGEffectPeriodic* newEffect);
 
-	void TickEffects(float DeltaTime);
-
+private:
+	UProperty* cachedProperty;
 	//void GetOrCreateAttribute();
 };

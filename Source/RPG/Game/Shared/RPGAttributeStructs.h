@@ -5,6 +5,8 @@
 USTRUCT(BlueprintType, Blueprintable)
 struct FAttributeBase
 {
+	GENERATED_USTRUCT_BODY()
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Base Attributes")
 	float Health;
 

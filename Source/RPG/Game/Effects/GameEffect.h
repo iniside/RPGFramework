@@ -12,8 +12,6 @@ class UGameEffect : public URPGEffectBase
 {
 	GENERATED_UCLASS_BODY()
 
-	virtual void Tick(float DeltaTime)  OVERRIDE;
-
 	virtual void PreInitialize() OVERRIDE;
 	virtual bool Initialize() OVERRIDE;
 

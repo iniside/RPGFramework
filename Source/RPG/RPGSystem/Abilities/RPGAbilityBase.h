@@ -4,6 +4,7 @@
 #include "Object.h"
 #include "GameplayTagContainer.h"
 #include "../Effects/RPGEffectBase.h"
+#include "../Structs/RPGSystemSructs.h"
 #include "RPGAbilityBase.generated.h"
 
 /**
@@ -74,9 +75,8 @@ class URPGAbilityBase : public UObject, public FTickableGameObject
 	UFUNCTION(BlueprintImplementableEvent, Category = "Ability|Events")
 	void OnAbilityStop();
 
-	UFUNCTION(BlueprintCallable, Category = "RPG|Ability")
-		float GetCurrentCooldownTime();
-
+	UFUNCTION(BlueprintImplementableEvent, Category = "Ability|Events")
+		void OnAbilityInitialized();
 	/*
 		Call only when ability is equiped for use. Ie. dragged to hotbar, or prepared from spellbook.
 		Assign any properties that are needed prior ability can be used. 
@@ -84,6 +84,7 @@ class URPGAbilityBase : public UObject, public FTickableGameObject
 	*/
 	virtual void Initialize(APawn* owner, AController* instigator);
 	//should it be here or move it game specific ?
+
 protected:
 	UPROPERTY(EditAnywhere, Category = "Ability Properties")
 		float MaxCastTime;
@@ -108,19 +109,8 @@ private:
 	bool CheckAbilityCost();
 public:
 	/*
-		Effect for handling Cooldown of ability.
-	*/
-	UPROPERTY(EditAnywhere, Category = "Ability Properties")
-		TSubclassOf<class URPGEffectBase> CooldownEffectClass;
-
-	TWeakObjectPtr<class URPGEffectBase> CooldownEffect;
-
-	/*
 		Effect for handling casting (using) ability.
 	*/
-	UPROPERTY(EditAnywhere, Category = "Ability Properties")
-		TSubclassOf<class URPGEffectBase> CastEffectClass;
-
 	FGameplayTagContainer AbilityTags;
 
 private:
@@ -137,12 +127,16 @@ protected:
 public:
 	UPROPERTY(EditAnywhere, Category = "Ability Properties")
 	TEnumAsByte<ECastType> AbilityCastType;
-
 public:
 	void FORCEINLINE SetAbilityOwner(APawn* Owner) { AbilityOwner = Owner; };
 	void FORCEINLINE SetInstigator(AController* instigator) { Instigator = instigator; };
 
 protected:
+	void CacheInstantEffects();
+
+	UFUNCTION(BlueprintPure, Category = "RPG|Ability")
+		float GetOwnerAttribute(FName AttributeName);
+
 	/*
 		maybe change it to APawn ?
 		Most actors are static anyway, and they do not
@@ -152,17 +146,14 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Ability")
 	APawn* AbilityOwner;
 
-	/*
-	To get this inline with default unreal structure.
-	Some functions like ApplyDamage need instigator suppiled.
-	So we will just set owning controller.
-	*/
 	UPROPERTY(BlueprintReadOnly, Category = "Ability")
 	AController* Instigator;
 
-	class URPGAttributeComponent* OwnerAttributeComp;
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	TWeakObjectPtr<class URPGAttributeComponent> OwnerAttributeComp;
 
-	//class URPGAttributeComponent* TargetAttributes;
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes")
+	TWeakObjectPtr<class URPGAttributeComponent> TargetAttributes;
 
 	//UPROPERTY(BlueprintReadOnly, Category = "Ability")
 	//	AActor* AbilityTarget;
